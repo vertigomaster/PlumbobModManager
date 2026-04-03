@@ -9,6 +9,8 @@ class Program
     string AppFolder => AppContext.BaseDirectory;
     string AppConfigDir => Path.Combine(AppFolder, "config");
     
+    
+    
     private static bool persistentMode = false;
     static async Task<int> Main(string[] args)
     {

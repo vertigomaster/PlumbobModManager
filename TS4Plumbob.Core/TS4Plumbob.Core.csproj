@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\IDEK.Tools.Shocktrooper\IDEK.Tools.Shocktrooper.csproj" />
+    </ItemGroup>
+
 </Project>
