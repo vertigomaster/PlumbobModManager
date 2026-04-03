@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>IDEK.Tools.StateExMachina</AssemblyName>
+        <RootNamespace>IDEK.Tools.StateExMachina</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\IDEK.Tools.Shocktrooper\IDEK.Tools.Shocktrooper.csproj" />
+    </ItemGroup>
+
+</Project>
