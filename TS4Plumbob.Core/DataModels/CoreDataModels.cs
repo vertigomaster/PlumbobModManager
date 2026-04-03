@@ -1,6 +1,8 @@
 ﻿//should be fine for these simpler models; Newtonsoft is a good alternative though.
-using System.Text.Json.Serialization; 
-namespace TS4PlumbobCore.DataModels;
+
+using System.Text.Json.Serialization;
+
+namespace TS4Plumbob.Core.DataModels;
 
 public record AuthorProfile(
     string Name,
