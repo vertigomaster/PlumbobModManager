@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\IDEK.Tools.Shocktrooper\IDEK.Tools.Shocktrooper.csproj" />
+      <ProjectReference Include="..\IDEK.Tools.Trove\IDEK.Tools.Trove.csproj" />
     </ItemGroup>
 
 </Project>

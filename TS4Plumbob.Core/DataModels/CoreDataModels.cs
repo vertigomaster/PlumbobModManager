@@ -23,7 +23,8 @@ public record ModMetadata(
     string Version, 
     AuthorProfile Author,
     
-    [property: JsonPropertyName("links")] //not sure if we actually need to specify 
+    //not sure if we actually need to specify 
+    [property: JsonPropertyName("links")] 
     Dictionary<string,string> Links, 
     
     DateTime? LastUpdated = null
@@ -33,5 +34,10 @@ public record ModEntry(
     Guid Id,
     string RootPath,
     bool HasMetadata,
-    ModMetadata? ModMetadata
-);
+    ModMetadata? ModMetadata)
+{
+    public bool ExistsOnDisk() 
+    {
+        return Directory.Exists(RootPath);
+    }
+}

@@ -74,7 +74,7 @@ public class RuntimeModRigManifest
 
         foreach (var modId in _orderedInstallList)
         {
-            var mod = ServiceLocator.Resolve<ModLibraryService>().GetMod(modId);
+            var mod = ServiceLocator.Resolve<IModLibraryService>().GetMod(modId);
             if (mod == null)
             {
                 //todo: some notification that this rig refers to a missing mod
@@ -113,7 +113,7 @@ public class RuntimeModRigManifest
     public ModEntry? GetMod(Guid modId)
     {
         if(!Contains(modId)) return null;
-        var mod = ServiceLocator.Resolve<ModLibraryService>().GetMod(modId);
+        var mod = ServiceLocator.Resolve<IModLibraryService>().GetMod(modId);
         return mod;
     }
     
@@ -150,7 +150,7 @@ public class RuntimeModRigManifest
     private bool Internal_TryAddMod(ModEntry mod)
     {
         //mods must first be added to the library. thats a litle annoying but makes this stuff a lot easier to maintain.
-        if (!ServiceLocator.Resolve<ModLibraryService>().IsValidMod(mod)) return false;
+        if (!ServiceLocator.Resolve<IModLibraryService>().IsValidMod(mod)) return false;
 
         return _modLut.Add(mod.Id);
     }
@@ -174,7 +174,7 @@ public class RuntimeModRigManifest
     private bool Internal_TryAddMod(Guid modId)
     {
         //mods must first be added to the library. thats a litle annoying but makes this stuff a lot easier to maintain.
-        if (ServiceLocator.Resolve<ModLibraryService>().GetMod(modId) == null) return false;
+        if (ServiceLocator.Resolve<IModLibraryService>().GetMod(modId) == null) return false;
 
         return _modLut.Add(modId);
     }
