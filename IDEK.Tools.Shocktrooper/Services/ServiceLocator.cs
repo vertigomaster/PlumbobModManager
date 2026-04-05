@@ -37,6 +37,7 @@
 * Author: Julian Noel (IDEK Studios)
 * Adapted for projects using Shocktroop-Utils, made it not Unity specific, and tidied up a little.
 * Added binding workflow - intended more for non-Unity usages, as Unity services are often components in-scene.
+* Added rudimentary Disposable pattern support 
 */
 
 using System.Collections.Generic;
@@ -150,6 +151,10 @@ namespace IDEK.Tools.ShocktroopUtils.Services
                 Log("Register called successfully.");
                 Services[typeof(T)] = serviceInstance;
                 Log($"{typeof(T)} : {serviceInstance.GetType()}");
+                
+                if (serviceInstance is IService patternedService)
+                    patternedService.OnRegister(typeof(T));
+                
                 return (T)serviceInstance;
             }
             else
@@ -189,8 +194,10 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// <typeparam name="T">The service type</typeparam>
         public static void Unregister<T>()
         {
-            if (Services.ContainsKey(typeof(T)))
+            if (Services.TryGetValue(typeof(T), out object? instance))
             {
+                if (instance is IService patternedService)
+                    patternedService.OnUnregister(typeof(T));
                 Services.Remove(typeof(T));
             }
         }
