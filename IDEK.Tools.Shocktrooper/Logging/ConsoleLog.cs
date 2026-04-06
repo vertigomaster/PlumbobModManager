@@ -88,13 +88,19 @@ namespace IDEK.Tools.Logging
         public static void Log(string output, Object context = null, bool toConsole = false, 
             [CallerFilePath] string f = "", [CallerLineNumber] int l = 0, [CallerMemberName] string m = "")
         {
-            Log(GenerateDebugMsg(output, f, l, m), context);
-
+            // Log(GenerateDebugMsg(output, f, l, m), context);
+            string genMsg = GenerateDebugMsg(output, f, l, m);
 #if UNITY_5_3_OR_NEWER
+            UnityEngine.Debug.Log(genMsg, context);
+
             if(DebugConsole.Singleton && (DebugConsole.Singleton.IsUnityLogOutputtingEnabled || toConsole))
             {
                 AddToDebugConsole(output, LogType.Log);
             }
+#else
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("ℹ " + genMsg);
+            Console.ResetColor();
 #endif
         }
 
@@ -106,12 +112,18 @@ namespace IDEK.Tools.Logging
         public static void LogWarning(string output, Object context = null, bool toConsole = false, [CallerFilePath] string f = "", 
             [CallerLineNumber] int l = 0, [CallerMemberName] string m = "")
         {
-            LogWarning(GenerateDebugMsg(output, f, l, m), context);
+            string genMsg = GenerateDebugMsg(output, f, l, m);
 #if UNITY_5_3_OR_NEWER
+            UnityEngine.Debug.LogWarning(genMsg, context);
+
             if(DebugConsole.Singleton && (DebugConsole.Singleton.IsUnityLogOutputtingEnabled || toConsole))
             {
                 AddToDebugConsole(output, LogType.Warning);
             }
+#else
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("⚠ " + genMsg);
+            Console.ResetColor();
 #endif
         }
 
@@ -123,12 +135,18 @@ namespace IDEK.Tools.Logging
         public static void LogError(string output, Object context=null, bool toConsole = false, [CallerFilePath] string f = "", 
             [CallerLineNumber] int l = 0, [CallerMemberName] string m = "")
         {
-            LogError(GenerateDebugMsg(output, f, l, m), context);
+            string genMsg = GenerateDebugMsg(output, f, l, m);
 #if UNITY_5_3_OR_NEWER
+            UnityEngine.Debug.LogError(genMsg, context);
+
             if(DebugConsole.Singleton && (DebugConsole.Singleton.IsUnityLogOutputtingEnabled || toConsole))
             {
                 AddToDebugConsole(output, LogType.Error);
             }
+#else
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("🛑 " + genMsg);
+            Console.ResetColor();
 #endif
         }
 
@@ -226,9 +244,10 @@ namespace IDEK.Tools.Logging
         private static void Log(string msg)
         {
 #if UNITY_5_3_OR_NEWER
-            Debug.Log(msg);
+            UnityEngine.Debug.Log(msg);
 #else
-            System.Diagnostics.Debug.WriteLine(msg);
+            // System.Diagnostics.Debug.WriteLine(msg);
+            Console.WriteLine(msg);
 #endif
         }
 

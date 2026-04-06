@@ -188,6 +188,17 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             }
         }
 
+        public static void ReregisterBoundService<T>()
+        {
+            if(!Jumpstarters.ContainsKey(typeof(T))) 
+                throw new InvalidOperationException(
+                    $"No bound service found for type {typeof(T)}. Ensure a jumpstarter " +
+                    $"is bound for this type before attempting to reregister it.");
+            
+            Unregister<T>();
+            Resolve<T>();
+        }
+
         /// <summary>
         /// Unregisters current instance of a service.
         /// </summary>
@@ -237,7 +248,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// either rework your code so that it will be available,
         /// or, if you're in a pinch, call either <see cref="IsRegistered{T}"/> or <see cref="TryJumpStart{T}"/>.
         /// </remarks>
-        public static T Resolve<T>(bool jumpStartIfNotFound = false)
+        public static T Resolve<T>(bool jumpStartIfNotFound = true)
         {
             // return (T)Services[typeof(T)];
             bool success = Services.TryGetValue(typeof(T), out object instance);
