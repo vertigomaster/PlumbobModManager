@@ -23,13 +23,22 @@ public class UserSettings
 /// </summary>
 public class AppConfig : IService
 {
+    public static readonly JsonSerializerOptions AppSerializerOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        AllowOutOfOrderMetadataProperties = true,
+        AllowTrailingCommas = true
+    };
+
     [JsonInclude, JsonPropertyName("userSettings")]
     public UserSettings UserSettings { get; } = new UserSettings();
 
     //TODO: contemplate whether the version should be compiled into the build for reliability
+
     [JsonInclude, JsonPropertyName("version")]
     public string FullVersionString { get; set; } = "0.0.0"; //TODO: include release and commit hash?
-    
+
     [JsonInclude, JsonPropertyName("shortVersion")]
     public string ShortVersionString { get; set; } = "0.0.0";
 
@@ -37,7 +46,7 @@ public class AppConfig : IService
     public string FullAppName { get; set; } = "Plumbob Mod Manager";
 
     [JsonInclude, JsonPropertyName("shortAppName")]
-    public string ShortAppName { get; set; } = "PMM";
+    public string ShortAppName { get; set; } = "PlumbobMM";
 
     public static string AppFolder => AppContext.BaseDirectory;
     public static string AppConfigDir => Path.Combine(AppFolder, "config");
@@ -59,7 +68,20 @@ public class AppConfig : IService
     
     public void SaveToDisk()
     {
-        string serialized = JsonSerializer.Serialize(this);
+        
+        string serialized = JsonSerializer.Serialize(
+            this, AppSerializerOptions);
+        
+        string? dir = Path.GetDirectoryName(MainAppConfig);
+
+        if (dir == null)
+        {
+            throw new InvalidOperationException("Configuration directory path is null. Cannot save to disk.");
+        }
+        
+        //harmless if it already exists, creates it otherwise
+        Directory.CreateDirectory(dir);
+        //creates or overwrites configu file with our up to date version.
         File.WriteAllText(MainAppConfig, serialized);
     }
 

@@ -1,6 +1,7 @@
 // Created by: Ryan King
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -99,7 +100,7 @@ namespace IDEK.Tools.Logging
             }
 #else
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("ℹ " + genMsg);
+            Debug.WriteLine("ℹ " + genMsg);
             Console.ResetColor();
 #endif
         }
@@ -122,7 +123,7 @@ namespace IDEK.Tools.Logging
             }
 #else
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("⚠ " + genMsg);
+            Debug.WriteLine("⚠ " + genMsg);
             Console.ResetColor();
 #endif
         }
@@ -145,7 +146,7 @@ namespace IDEK.Tools.Logging
             }
 #else
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("🛑 " + genMsg);
+            Debug.WriteLine("🛑 " + genMsg);
             Console.ResetColor();
 #endif
         }
@@ -247,7 +248,7 @@ namespace IDEK.Tools.Logging
             UnityEngine.Debug.Log(msg);
 #else
             // System.Diagnostics.Debug.WriteLine(msg);
-            Console.WriteLine(msg);
+            Debug.WriteLine(msg);
 #endif
         }
 

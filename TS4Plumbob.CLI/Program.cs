@@ -49,7 +49,7 @@ class Program
             horizontalSpacing: 3, 
             borderHeight: 1, 
             borderChar: '=');
-        WriteUserMsg(bootMsg);
+        WriteUserMsg(bootMsg, ConsoleColor.Green);
     }
 
     //TODO: build REPL template for later projects
@@ -58,7 +58,13 @@ class Program
         Core.LoggingMode = PlumbobKernel.LogMode.File;
         RootCommand rootCommand = BuildCommandTree();
         var parseResult = rootCommand.Parse(args);
-        return await parseResult.InvokeAsync();
+        int result = await parseResult.InvokeAsync();
+        
+        if(result != 0) return result;
+
+        await ShutdownCore();
+        
+        return 0;
     }
 
     private static async Task EnterInteractiveMode()
@@ -75,7 +81,7 @@ class Program
         //start up REPL
         while (true) //TODO: add some flag or guard to this
         {
-            Console.Write($"\n[{Config.ShortAppName} {Config.ShortVersionString}] >> ");
+            Console.Write($"\n[{Config.ShortAppName} - {Config.ShortVersionString}] >> ");
             
             var input = Console.ReadLine()?.Trim();
             if(string.IsNullOrWhiteSpace(input)) continue;
@@ -83,6 +89,7 @@ class Program
             if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
             {
                 WriteInfo("Exiting Interactive Mode...");
+                await ShutdownCore();
                 break;
             }
 
@@ -97,6 +104,14 @@ class Program
                 WriteError("Invalid command. Type 'help' for a list of available commands.");
             }
         }
+    }
+
+    private static async Task ShutdownCore()
+    {
+        ConsoleLog.Log("Shutting down Plumbob Mod Manager CLI...");
+        await Core.Shutdown();
+        ConsoleLog.Log("Plumbob Mod Manager CLI shutdown complete.");
+        //TODO: anything else?
     }
 
     /// <summary>
@@ -187,11 +202,27 @@ class Program
 
     private static Command BuildTestCommands()
     {
-        Command testCommand = new("test", "testing out subcommands")
-        {
-            new Option<bool>("--example"),
-            new Option<bool>("--fart-mode")
+        Option<bool> example = new("--example", "-e");
+        Option<bool> fartMode = new("--fart-mode", "-f");
+        
+        Command testCommand = new("test", "testing out subcommands") {
+            example, fartMode
         };
+        
+        testCommand.SetAction(parseResult => {
+            bool isExample = parseResult.GetValue(example);
+            bool isFartMode = parseResult.GetValue(fartMode);
+            
+            if(isExample) WriteUserMsg("Example option is enabled!");
+            
+            if(isFartMode) WriteUserMsg("PBBBPBBBPBPTTTTT 💨");
+
+            if (!isFartMode && !isExample)
+            {
+                WriteUserMsg("No options enabled.");
+            }
+        });
+        
         return testCommand;
     }
 

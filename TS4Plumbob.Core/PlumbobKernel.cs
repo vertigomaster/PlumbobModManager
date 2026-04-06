@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using IDEK.Tools.Logging;
 using IDEK.Tools.ShocktroopUtils.Services;
 using IDEK.Tools.Trove;
 using IDEK.Tools.Utilities;
@@ -33,9 +34,9 @@ public partial class PlumbobKernel()
     /// <returns></returns>
     public async Task<int> Start(string[] args)
     {
-        Debug.WriteLine("Attempting to start PMM Kernel...");
+        ConsoleLog.Log("Attempting to start PMM Kernel...");
         if (IsRunning) return 0;
-        Debug.WriteLine("Starting PMM Kernel...");
+        ConsoleLog.Log("Starting PMM Kernel...");
         
         IsRunning = true;
         
@@ -50,9 +51,9 @@ public partial class PlumbobKernel()
 
     public async Task<int> Shutdown()
     {
-        Debug.WriteLine("Attempting shutdown PMM Kernel...");
+        ConsoleLog.Log("Attempting shutdown PMM Kernel...");
         if (!IsRunning) return 0;
-        Debug.WriteLine("Shutting down PMM Kernel...");
+        ConsoleLog.Log("Shutting down PMM Kernel...");
         
         DisposeCoreServices();
         
@@ -65,10 +66,10 @@ public partial class PlumbobKernel()
     /// </summary>
     private void BindCoreServices()
     {
-        Debug.WriteLine("Binding Core Services...");
+        ConsoleLog.Log("Binding Core Services...");
         ServiceLocator.BindJumpstarter<AppConfig>(() =>
         {
-            Debug.WriteLine("Jumpstarting AppConfig...");
+            ConsoleLog.Log("Jumpstarting AppConfig...");
             AppConfig newService = AppConfig.LoadFromDisk() ?? new AppConfig();
 
             coreLifetimeTrove.AddCleanup(nameof(AppConfig), () =>
@@ -81,7 +82,7 @@ public partial class PlumbobKernel()
         });
         
         ServiceLocator.BindJumpstarter<IModLibraryService>(() => {
-            Debug.WriteLine("Jumpstarting IModLibraryService via JsonMonolithModLibraryService...");
+            ConsoleLog.Log("Jumpstarting IModLibraryService via JsonMonolithModLibraryService...");
             string location = ServiceLocator.Resolve<AppConfig>()
                 .UserSettings.ModLibraryPath;
             
@@ -99,7 +100,7 @@ public partial class PlumbobKernel()
 
     private void DisposeCoreServices()
     {
-        Debug.WriteLine("Disposing Core Services...");
+        ConsoleLog.Log("Disposing Core Services...");
         coreLifetimeTrove.Dispose(); //well that was easy
     }
 }
