@@ -9,6 +9,8 @@ namespace TS4Plumbob.Core;
 
 public partial class PlumbobKernel()
 {
+    public static PlumbobKernel Instance { get; private set; } = new();
+    
     [Flags]
     public enum LogMode
     {
@@ -26,6 +28,16 @@ public partial class PlumbobKernel()
     public LogMode LoggingMode { get; set; } = LogMode.Console;
 
     public bool IsRunning { get; private set; } = false;
+
+    public static async Task<int> StartInstance(string[] args)
+    {
+        ConsoleLog.Log("Attempting to start PMM Kernel...");
+        if (Instance.IsRunning) return 0;
+        ConsoleLog.Log("Starting PMM Kernel...");
+
+        Instance = new PlumbobKernel();
+        return await Instance.Start(args);
+    }
     
     /// <summary>
     /// Boots up the core, binding the services it provides and enabling various events and logic.
