@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AvaloniaProject">
+    <option name="projectPerEditor">
+      <map>
+        <entry key="TS4Plumbob.Avalonia/App.axaml" value="TS4Plumbob.Avalonia/TS4Plumbob.Avalonia.csproj" />
+        <entry key="TS4Plumbob.Avalonia/Views/MainWindow.axaml" value="TS4Plumbob.Avalonia/TS4Plumbob.Avalonia.csproj" />
+      </map>
+    </option>
+  </component>
+</project>
