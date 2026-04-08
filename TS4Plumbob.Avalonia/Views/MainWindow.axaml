@@ -32,7 +32,19 @@
             </Grid>
         </Border>
 
-        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"> Calculate </Button>
+        <Button 
+            HorizontalAlignment="Stretch" 
+            HorizontalContentAlignment="Center"
+            Command="{Binding UpdateModLibraryFolderCommand}"> 
+            Select Mod Library Folder 
+        </Button>
+
+        <TextBlock 
+            Text="{
+                Binding ModLibraryFolder.Path.LocalPath, 
+                FallbackValue='No folder selected'
+            }" 
+            HorizontalAlignment="Center" Margin="5"/>
 
     </StackPanel>
 
