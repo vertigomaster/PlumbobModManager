@@ -5,6 +5,8 @@
       <map>
         <entry key="TS4Plumbob.Avalonia/App.axaml" value="TS4Plumbob.Avalonia/TS4Plumbob.Avalonia.csproj" />
         <entry key="TS4Plumbob.Avalonia/Views/MainWindow.axaml" value="TS4Plumbob.Avalonia/TS4Plumbob.Avalonia.csproj" />
+        <entry key="TS4Plumbob.Avalonia/Views/ModListView.axaml" value="TS4Plumbob.Avalonia/TS4Plumbob.Avalonia.csproj" />
+        <entry key="TS4Plumbob.Avalonia/Views/NoDataView.axaml" value="TS4Plumbob.Avalonia/TS4Plumbob.Avalonia.csproj" />
       </map>
     </option>
   </component>
