@@ -4,6 +4,9 @@ using IDEK.Tools.Logging;
 
 namespace IDEK.Tools.Utilities
 {
+    /// <inheritdoc cref="IdekEvent{T}"/>
+    public class IdekEvent : IdekEvent<Action> { }
+    
     /// <summary>
     /// A safe and simple event wrapper that avoids double adds and does not throw exceptions on double removes,
     /// instead returning a boolean to indicate whether they succeeded or not.
@@ -23,7 +26,7 @@ namespace IDEK.Tools.Utilities
         public bool TryAddListener(T handler)
         {
             if (!_registered.Add(handler)) return false;
-            ConsoleLog.Log("adding handler to IdekEvent");
+            // ConsoleLog.Log("adding handler to IdekEvent");
             _delegate = (T)Delegate.Combine(_delegate, handler);
             return true;
         }
@@ -37,7 +40,7 @@ namespace IDEK.Tools.Utilities
 
         public void Invoke(params object?[] args)
         {
-            ConsoleLog.Log("invoking our IdekEvent");
+            // ConsoleLog.Log("invoking our IdekEvent");
             _delegate?.DynamicInvoke(args);
         }
 

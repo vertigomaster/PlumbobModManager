@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace IDEK.Tools.ShocktroopExtensions
 {
@@ -165,6 +166,67 @@ namespace IDEK.Tools.ShocktroopExtensions
             }
 
             return sentence;
+        }
+
+        public static string ToBorderedString(this string s, 
+            int borderWidth = 1, int borderHeight=1, 
+            int horizontalSpacing=1, int verticalSpacing=0, 
+            char borderChar = '=')
+        {
+            int mainStringLength = s.Length;
+            int totalHeight = borderHeight + verticalSpacing + 1;
+            
+            string fullBorder = new string(borderChar, mainStringLength + 2 * borderWidth + 2 * horizontalSpacing);
+            
+            int totalWidth = fullBorder.Length;
+            
+            string leftBorder = new string(borderChar, borderWidth) + 
+                new string(' ', horizontalSpacing);
+            string rightBorder = new string(' ', horizontalSpacing) + new string(borderChar, borderWidth);
+            string emptyLine = leftBorder + new string(' ', mainStringLength) + rightBorder;
+            string centerLine =  leftBorder + s + rightBorder;
+            
+            var sb = new StringBuilder(fullBorder.Length * totalHeight);
+
+            for (int i = 0; i < borderHeight; i++) sb.AppendLine(fullBorder);
+            for (int i = 0; i < verticalSpacing; i++) sb.AppendLine(emptyLine);
+            
+            sb.AppendLine(centerLine);
+
+            for (int i = 0; i < verticalSpacing; i++) sb.AppendLine(emptyLine);
+            for (int i = 0; i < borderHeight; i++) sb.AppendLine(fullBorder);
+            
+            return sb.ToString();
+            
+            
+        }
+
+        /// <summary>
+        /// Repeats the specified string a given number of times.
+        /// </summary>
+        /// <param name="str">The string to be repeated.</param>
+        /// <param name="repeats">The number of times to repeat the string.</param>
+        /// <returns>A new string consisting of the specified string repeated the given number of times, or an empty string if the input is null, empty, or the repeat count is less than or equal to zero.</returns>
+        public static string Repeated(this string str, int repeats)
+        {
+            //string.IsNullOrEmpty(str) is faster than (str == null || str.Length == 0)
+            if(string.IsNullOrEmpty(str) || repeats <= 0) return string.Empty;
+            
+            var sb = new StringBuilder(str.Length * repeats);
+            for (int i = 0; i < repeats; i++) sb.Append(str);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Repeats the character the specified number of times.
+        /// </summary>
+        /// <param name="c">The character to be repeated.</param>
+        /// <param name="repeats">The number of times to repeat the character.</param>
+        /// <returns>A new string consisting of the input character repeated the specified number of times.</returns>
+        public static string Repeated(this char c, int repeats)
+        {
+            if (repeats <= 0) return string.Empty;
+            return new string(c, repeats);
         }
     }
 }

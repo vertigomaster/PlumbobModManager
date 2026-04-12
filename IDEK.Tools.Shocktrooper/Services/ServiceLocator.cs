@@ -37,6 +37,7 @@
 * Author: Julian Noel (IDEK Studios)
 * Adapted for projects using Shocktroop-Utils, made it not Unity specific, and tidied up a little.
 * Added binding workflow - intended more for non-Unity usages, as Unity services are often components in-scene.
+* Added rudimentary Disposable pattern support 
 */
 
 using System.Collections.Generic;
@@ -150,6 +151,10 @@ namespace IDEK.Tools.ShocktroopUtils.Services
                 Log("Register called successfully.");
                 Services[typeof(T)] = serviceInstance;
                 Log($"{typeof(T)} : {serviceInstance.GetType()}");
+                
+                if (serviceInstance is IService patternedService)
+                    patternedService.OnRegister(typeof(T));
+                
                 return (T)serviceInstance;
             }
             else
@@ -183,14 +188,27 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             }
         }
 
+        public static void ReregisterBoundService<T>()
+        {
+            if(!Jumpstarters.ContainsKey(typeof(T))) 
+                throw new InvalidOperationException(
+                    $"No bound service found for type {typeof(T)}. Ensure a jumpstarter " +
+                    $"is bound for this type before attempting to reregister it.");
+            
+            Unregister<T>();
+            Resolve<T>();
+        }
+
         /// <summary>
         /// Unregisters current instance of a service.
         /// </summary>
         /// <typeparam name="T">The service type</typeparam>
         public static void Unregister<T>()
         {
-            if (Services.ContainsKey(typeof(T)))
+            if (Services.TryGetValue(typeof(T), out object? instance))
             {
+                if (instance is IService patternedService)
+                    patternedService.OnUnregister(typeof(T));
                 Services.Remove(typeof(T));
             }
         }
@@ -230,7 +248,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// either rework your code so that it will be available,
         /// or, if you're in a pinch, call either <see cref="IsRegistered{T}"/> or <see cref="TryJumpStart{T}"/>.
         /// </remarks>
-        public static T Resolve<T>(bool jumpStartIfNotFound = false)
+        public static T Resolve<T>(bool jumpStartIfNotFound = true)
         {
             // return (T)Services[typeof(T)];
             bool success = Services.TryGetValue(typeof(T), out object instance);
