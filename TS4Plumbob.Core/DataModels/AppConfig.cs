@@ -10,11 +10,20 @@ namespace TS4Plumbob.Core.DataModels;
 /// </summary>
 public class UserSettings
 {
-    [JsonInclude, JsonPropertyName("profileRootPath")]
-    public string ProfileRootPath { get; set; }
-
+    /// <summary>
+    /// The root of the entire mod library. Pretty much all app-generated files are stored here.
+    /// </summary>
     [JsonInclude, JsonPropertyName("modLibraryPath")]
     public string ModLibraryPath { get; set; }
+
+    /// <summary>
+    /// Folder where all the rig folders are stored. Should ideally be a subfolder of <see cref="ModLibraryPath"/>.
+    /// </summary>
+    /// <remarks>
+    /// Rigs do not store actual source mod files, they only store rig metadata about them.
+    /// </remarks>
+    [JsonInclude, JsonPropertyName("profileRootPath")]
+    public string RigsRootPath { get; set; }
 }
 
 /// <summary>
@@ -65,10 +74,10 @@ public class AppConfig : IService
     }
 
     #endregion
-    
+
     public void SaveToDisk()
     {
-        
+        Debug.WriteLine("Saving AppConfig to disk...");
         string serialized = JsonSerializer.Serialize(
             this, AppSerializerOptions);
         
@@ -83,30 +92,39 @@ public class AppConfig : IService
         Directory.CreateDirectory(dir);
         //creates or overwrites configu file with our up to date version.
         File.WriteAllText(MainAppConfig, serialized);
+        Debug.WriteLine("AppConfig saved successfully.");
     }
 
     public static AppConfig? LoadFromDisk()
     {
+        Debug.WriteLine("Loading AppConfig from disk...");
         try
         {
             string fileText = File.ReadAllText(MainAppConfig);
-            return JsonSerializer.Deserialize<AppConfig>(fileText);
+            AppConfig? result = JsonSerializer.Deserialize<AppConfig>(fileText);
+            if (result != null)
+            {
+                Debug.WriteLine("AppConfig loaded successfully.");
+            }
+            else
+            {
+                Debug.WriteLine("Warning: failed to deserialize existing AppConfig. Returning null.");
+            }
+            return result;
         }
         catch (DirectoryNotFoundException e)
         {
             Debug.WriteLine(
-                $"AppConfig.LoadFromDisk failed - a directory was missing in " +
-                $"path \"{MainAppConfig}\" : " + e.Message + " - returning null.");
+                $"Warning: AppConfig.LoadFromDisk failed - a directory was missing in " +
+                $"path \"{MainAppConfig}\" : \n\t" + e.Message + " - returning null.");
             return null;
         }
         catch (FileNotFoundException e)
         {
             Debug.WriteLine(
-                $"AppConfig.LoadFromDisk failed - file \"{MainAppConfig}\" not " +
+                $"Warning: AppConfig.LoadFromDisk failed - file \"{MainAppConfig}\" not " +
                 $"present: " + e.Message + " - returning null.");
             return null;
         }
     }
-
-    
 }

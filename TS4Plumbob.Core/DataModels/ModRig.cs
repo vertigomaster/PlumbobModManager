@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using IDEK.Tools.ShocktroopUtils.Services;
+using TS4Plumbob.Core.DataModels.IdTypes;
 
 namespace TS4Plumbob.Core.DataModels;
 
@@ -8,38 +9,38 @@ namespace TS4Plumbob.Core.DataModels;
 /// Denotes a runtime-only hash for lookups, and a serialized ordered install List
 /// </summary>
 [Serializable]
-public class RuntimeModRigManifest
+public class ModRig
 {
     // [NonSerialized]
     // private HashSet<ModEntry> _modLut;
     [NonSerialized]
-    private HashSet<Guid> _modLut;
+    private HashSet<ModEntryId> _modLut;
 
     // [JsonInclude]
     // [JsonPropertyName("orderedInstallList")]
-    private List<Guid> _orderedInstallList;
-    public IReadOnlyList<Guid> OrderedInstallList => _orderedInstallList;
+    private List<ModEntryId> _orderedInstallList;
+    public IReadOnlyList<ModEntryId> OrderedInstallList => _orderedInstallList;
 
     public int Count => _modLut.Count;
 
     #region Constructors/Factories
 
-    public RuntimeModRigManifest()
+    public ModRig()
     {
         _orderedInstallList = [];
         _modLut = [];
         // _modGuidLut = [];
     }
 
-    public RuntimeModRigManifest(ModManifestSnapshot snapshot)
+    public ModRig(ModRigSnapshot snapshot)
     {
         //guid lookup from the pool of mods
         _orderedInstallList = snapshot.OrderedInstallList.ToList();
-        _modLut = new HashSet<Guid>(_orderedInstallList);
+        _modLut = new(_orderedInstallList);
         // _modGuidLut = new HashSet<Guid>(_modLut.Select(mod => mod.Id));
     }
     
-    public RuntimeModRigManifest(IEnumerable<Guid> orderedInstallList)
+    public ModRig(IEnumerable<ModEntryId> orderedInstallList)
     {
         _orderedInstallList = orderedInstallList.ToList();
 
@@ -60,9 +61,9 @@ public class RuntimeModRigManifest
     //     _modGuidLut = new HashSet<Guid>(_modLut.Select(mod => mod.Id));
     // }
 
-    public static RuntimeModRigManifest? FromSerializedData(string serializedData)
+    public static ModRig? FromSerializedData(string serializedData)
     {
-        RuntimeModRigManifest? manifest = JsonSerializer.Deserialize<RuntimeModRigManifest>(serializedData);
+        ModRig? manifest = JsonSerializer.Deserialize<ModRig>(serializedData);
         manifest?.InitializeFromSerializedData();
         return manifest;
     }
@@ -70,11 +71,11 @@ public class RuntimeModRigManifest
     public void InitializeFromSerializedData()
     {
         // Repopulate the runtime hashsets from the list on deserialization
-        _modLut = new HashSet<Guid>(_orderedInstallList);
+        _modLut = new(_orderedInstallList);
 
         foreach (var modId in _orderedInstallList)
         {
-            var mod = ServiceLocator.Resolve<IModLibraryService>().GetMod(modId);
+            var mod = ServiceLocator.Resolve<IModLibraryService>().GetModEntry(modId);
             if (mod == null)
             {
                 //todo: some notification that this rig refers to a missing mod
@@ -110,10 +111,15 @@ public class RuntimeModRigManifest
 
     #region Queries
 
+    public IEnumerable<ModEntry> GetAllMods()
+    {
+        return _modLut.Select(ServiceLocator.Resolve<IModLibraryService>().GetModEntry);
+    }
+    
     public ModEntry? GetMod(Guid modId)
     {
         if(!Contains(modId)) return null;
-        var mod = ServiceLocator.Resolve<IModLibraryService>().GetMod(modId);
+        var mod = ServiceLocator.Resolve<IModLibraryService>().GetModEntry(modId);
         return mod;
     }
     
@@ -174,7 +180,7 @@ public class RuntimeModRigManifest
     private bool Internal_TryAddMod(Guid modId)
     {
         //mods must first be added to the library. thats a litle annoying but makes this stuff a lot easier to maintain.
-        if (ServiceLocator.Resolve<IModLibraryService>().GetMod(modId) == null) return false;
+        if (ServiceLocator.Resolve<IModLibraryService>().GetModEntry(modId) == null) return false;
 
         return _modLut.Add(modId);
     }

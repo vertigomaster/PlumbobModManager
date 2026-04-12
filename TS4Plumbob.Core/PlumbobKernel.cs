@@ -79,13 +79,10 @@ public partial class PlumbobKernel()
     private void BindCoreServices()
     {
         ConsoleLog.Log("Binding Core Services...");
-        ServiceLocator.BindJumpstarter<AppConfig>(() =>
-        {
-            ConsoleLog.Log("Jumpstarting AppConfig...");
+        ServiceLocator.BindJumpstarter<AppConfig>(() => {
             AppConfig newService = AppConfig.LoadFromDisk() ?? new AppConfig();
 
-            coreLifetimeTrove.AddCleanup(nameof(AppConfig), () =>
-            {
+            coreLifetimeTrove.AddCleanup(nameof(AppConfig), () => {
                 ServiceLocator.TryUnregister<AppConfig>(newService);
                 newService.SaveToDisk();
             });
@@ -94,9 +91,8 @@ public partial class PlumbobKernel()
         });
         
         ServiceLocator.BindJumpstarter<IModLibraryService>(() => {
-            ConsoleLog.Log("Jumpstarting IModLibraryService via JsonMonolithModLibraryService...");
-            string location = ServiceLocator.Resolve<AppConfig>()
-                .UserSettings.ModLibraryPath;
+            var appConfig = ServiceLocator.Resolve<AppConfig>();
+            string location = appConfig.UserSettings.ModLibraryPath;
             
             var newService = JsonMonolithModLibraryService.LoadFromFile(location) ?? 
                 new JsonMonolithModLibraryService();
@@ -105,7 +101,7 @@ public partial class PlumbobKernel()
                 ServiceLocator.TryUnregister<IModLibraryService>(newService);
                 newService.SaveToFile(location);
             });
-            
+
             return newService;
         });
     }
