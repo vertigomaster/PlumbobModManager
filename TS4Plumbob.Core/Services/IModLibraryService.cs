@@ -8,7 +8,7 @@ public interface IModLibraryService : IService
     ModEntry? GetModEntry(Guid id);
     Mod? GetMod(Guid id);
     Mod? GetModFromEntry(Guid id);
-    void AddMod(ModEntry modEntry);
+    bool TryAddMod(ModEntry modEntry);
     void RemoveMod(ModEntry modEntry);
     bool IsValidMod(ModEntry? mod);
     ModLibraryValidationResult ValidateLibrary();

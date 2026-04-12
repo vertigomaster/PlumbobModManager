@@ -158,7 +158,7 @@ public partial class RootViewModel : ViewModelBase
         IStorageFolder? result = await OpenFolderPicker.Handle("Select Mod to Copy into Library");
         if (result is null) return;
 
-        Library.AddMod(ModEntry.CreateNewUnique(result.Path.LocalPath, null));
+        Library.TryAddMod(ModEntry.CreateNewUnique(result.Path.LocalPath, null));
     }
     
     #endregion

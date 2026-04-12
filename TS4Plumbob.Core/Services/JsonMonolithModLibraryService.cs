@@ -122,14 +122,32 @@ public class JsonMonolithModLibraryService : IModLibraryService
         return null;
     }
 
-    public void AddMod(ModEntry modEntry)
+    public bool TryAddMod(ModEntry modEntry)
     {
-        if(!_distinctModLut.Add(modEntry)) return;
+        //make all the checks before actually mutating state
+        if(_distinctModLut.Contains(modEntry))
+        {
+            Console.WriteLine(
+                $"Failed to add mod '{modEntry.HumanReadableIdentifier}' with ID '{modEntry.Id}' to the library. Duplicate entry detected.");
+            return false;
+        }
+        
+        if(_runtimeModsByGuid.ContainsKey(modEntry.Id))
+        {
+            Console.WriteLine(
+                $"Failed to add mod '{modEntry.HumanReadableIdentifier}' with ID '{modEntry.Id}' to the library. Duplicate entry detected.");
+            return false;
+        }
+
+        //mutate state
+        _distinctModLut.Add(modEntry);
+        _runtimeModsByGuid.Add(modEntry.Id, modEntry);
         _modList.Add(modEntry);
-        _runtimeModsByGuid.TryAdd(modEntry.Id, modEntry);
+        
         Debug.WriteLine($"Added mod '{modEntry.HumanReadableIdentifier}' " +
             $"with ID '{modEntry.Id}' to the library.");
         Debug.WriteLine($"Mod library now contains {_modList.Count} mods.");
+        return true;
     }
 
 
