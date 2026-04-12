@@ -14,7 +14,6 @@ namespace Plumbob.CLI;
 class Program
 {
     private static PlumbobKernel Core => PlumbobKernel.Instance;
-
     private static AppConfig Config => ServiceLocator.Resolve<AppConfig>();
 
     private static async Task<int> Main(string[] args)
@@ -25,7 +24,7 @@ class Program
 
         if (args.Length != 0) return await EnterImmediateMode(args);
 
-        PlumbobMsg.WriteInfo("No arguments provided. Initializing in interactive mode...");
+        PlumbobMsg.WriteDebugInfo("No arguments provided. Initializing in interactive mode...");
         await EnterInteractiveMode();
         return 0;
     }
@@ -89,7 +88,7 @@ class Program
 
             if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
             {
-                PlumbobMsg.WriteInfo("Exiting Interactive Mode...");
+                PlumbobMsg.WriteDebugInfo("Exiting Interactive Mode...");
                 await ShutdownCore();
                 break;
             }
@@ -101,8 +100,8 @@ class Program
             }
             catch(Exception e) //TODO catch specific exceptions
             {
-                PlumbobMsg.WriteError($"Error parsing command \"{input}\": {e}");
-                PlumbobMsg.WriteError("Invalid command. Type 'help' for a list of available commands.");
+                PlumbobMsg.WriteUserError($"Error parsing command \"{input}\": {e}");
+                PlumbobMsg.WriteUserError("Invalid command. Type 'help' for a list of available commands.");
             }
         }
     }

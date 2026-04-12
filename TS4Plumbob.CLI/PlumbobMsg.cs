@@ -8,7 +8,7 @@ public static class PlumbobMsg
     /// Writes an error message to the console in red color with a preceding error symbol.
     /// </summary>
     /// <param name="message">The error message to be displayed.</param>
-    public static void WriteError(string message)
+    public static void WriteUserError(string message)
     {
         ConsoleLog.LogError(message);
     }
@@ -18,7 +18,7 @@ public static class PlumbobMsg
     /// prefixed with a warning symbol.
     /// </summary>
     /// <param name="message">The warning message to be displayed.</param>
-    public static void WriteWarning(string message)
+    public static void WriteDebugWarning(string message)
     {
         // Console.ForegroundColor = ConsoleColor.Yellow;
         // Console.WriteLine("⚠ " +  message);
@@ -30,7 +30,7 @@ public static class PlumbobMsg
     /// Writes an informational message to the console in cyan color with a preceding informational symbol.
     /// </summary>
     /// <param name="message">The informational message to be displayed on the console.</param>
-    public static void WriteInfo(string message)
+    public static void WriteDebugInfo(string message)
     {
         // Console.ForegroundColor = ConsoleColor.Cyan;
         // Console.WriteLine("ℹ " + message);
