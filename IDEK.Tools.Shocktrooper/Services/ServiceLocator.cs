@@ -42,6 +42,7 @@
 
 using System.Collections.Generic;
 using System;
+using System.Diagnostics;
 
 namespace IDEK.Tools.ShocktroopUtils.Services
 {
@@ -121,6 +122,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         public static void BindJumpstarter<TService>(Func<object> jumpstarter)
         {
             Jumpstarters[typeof(TService)] = jumpstarter;
+            Debug.WriteLine($"{typeof(TService)} bound.");
         }
         
         /// <summary>
@@ -139,29 +141,31 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// <returns>
         /// The registered service of type <see cref="T"/>. If one was already registered, it returns that instead of the inputted one.
         /// </returns>
-        public static T Register<T>(object serviceInstance)
+        public static T? Register<T>(object serviceInstance) => 
+            (T?)Register(typeof(T), serviceInstance);
+        
+        public static object? Register(Type type, object serviceInstance)
         {
-            if (Services.ContainsKey(typeof(T)))
+            if (Services.TryGetValue(type, out var registeredService))
             {
                 LogError("Service is already registered! Please unregister the current service before registering a new instance.");
-                return (T)Services[typeof(T)];
+                return registeredService;
             }
-            else if (serviceInstance is T)
+
+            if (!serviceInstance.GetType().IsAssignableFrom(type))
             {
-                Log("Register called successfully.");
-                Services[typeof(T)] = serviceInstance;
-                Log($"{typeof(T)} : {serviceInstance.GetType()}");
-                
-                if (serviceInstance is IService patternedService)
-                    patternedService.OnRegister(typeof(T));
-                
-                return (T)serviceInstance;
+                LogError($"Registration Failed; Object {serviceInstance} does not derive from the service type!");
+                return null;
             }
-            else
-            {
-                LogError("Object does not derived from the service type!");
-                return default(T);
-            }
+
+            Log("Register called successfully.");
+            Services[type] = serviceInstance;
+            Log($"{type} :=> {serviceInstance.GetType()}");
+
+            if (serviceInstance is IService patternedService)
+                patternedService.OnRegister(type);
+
+            return serviceInstance;
         }
 
         /// <inheritdoc cref="Register{T}" />
@@ -179,7 +183,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             {
                 Log("TryRegister called successfully.");
                 Services[typeof(T)] = serviceInstance;
-                Log($"{typeof(T)} : {serviceInstance.GetType()}");
+                Log($"{typeof(T)} :=> {serviceInstance.GetType()}");
                 return true;
             }
             else
@@ -203,14 +207,18 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// Unregisters current instance of a service.
         /// </summary>
         /// <typeparam name="T">The service type</typeparam>
-        public static void Unregister<T>()
+        public static void Unregister<T>() => Unregister(typeof(T));
+        
+
+        public static void Unregister(Type type)
         {
-            if (Services.TryGetValue(typeof(T), out object? instance))
-            {
-                if (instance is IService patternedService)
-                    patternedService.OnUnregister(typeof(T));
-                Services.Remove(typeof(T));
-            }
+            if (!Services.TryGetValue(type, out object? instance)) return;
+            
+            Log($"Unregistering {type}...");
+            if (instance is IService patternedService)
+                patternedService.OnUnregister(type);
+            Services.Remove(type);
+            Log($"{type} unregistered.");
         }
 
         /// <summary>
@@ -272,7 +280,10 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 
             if (Jumpstarters.TryGetValue(typeof(T), out Func<object> jumpstarter))
             {
+                Log($"Jumpstarting {typeof(T)}...");
                 T output = (T)jumpstarter?.Invoke();
+                Log($"{typeof(T)} now resolvable.");
+                
 
                 Register<T>(output);
                 return output;
@@ -281,7 +292,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             return default;
         }
 
-        public static bool TryResolve<T>(out T serviceInstance, bool jumpStartIfNotFound = false)
+        public static bool TryResolve<T>(out T serviceInstance, bool jumpStartIfNotFound = true)
         {
             bool success = Services.TryGetValue(typeof(T), out object instance);
 
@@ -315,7 +326,9 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 
             if (Jumpstarters.TryGetValue(typeof(T), out Func<object> jumpstarter))
             {
+                Log($"Jumpstarting {typeof(T)}...");
                 T output = (T)jumpstarter?.Invoke();
+                Log($"{typeof(T)} now resolvable.");
 
                 Register<T>(output);
                 serviceInstance = output;
@@ -340,7 +353,15 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// </summary>
         public static void Reset()
         {
+            Log("Resetting Service Locator...");
+            
+            foreach (KeyValuePair<Type, object> service in Services)
+            {
+                Unregister(service.Key);
+            }
+            //just for good measure
             Services.Clear();
+            Log("Service Locator Reset. All services unregistered.");
         }
 
         /// <summary>
@@ -377,7 +398,9 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 
             if (Jumpstarters.TryGetValue(typeof(T), out Func<object> jumpstarter))
             {
+                Log($"Jumpstarting {typeof(T)}...");
                 T output = (T)jumpstarter?.Invoke();
+                Log($"{typeof(T)} now resolvable.");
 
                 Register<T>(output);
                 return output;
