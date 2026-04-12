@@ -18,6 +18,8 @@ sealed class Program
         if (startCode != 0) return;
         
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        
+        Console.WriteLine("Log test - does this fire before or after avalonia?");
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
