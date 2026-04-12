@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using TS4Plumbob.Core.DataModels.IdTypes;
 
 namespace TS4Plumbob.Core.DataModels;
 
@@ -25,19 +24,21 @@ public class JsonMonolithModLibraryService : IModLibraryService
     private HashSet<ModEntry> _distinctModLut;
 
     [JsonIgnore]
-    private Dictionary<ModEntryId, ModEntry> _runtimeModsByGuid;
+    private Dictionary<Guid, ModEntry> _runtimeModsByGuid;
 
     public IReadOnlyList<ModEntry> ModList => _modList;
-    public IReadOnlyDictionary<ModEntryId, ModEntry> ModsByGuid => _runtimeModsByGuid;
+    public IReadOnlyDictionary<Guid, ModEntry> ModsByGuid => _runtimeModsByGuid;
 
-    private ModRig _activeRig;
+    private ModRig? _activeRig;
     private List<ModRig> _rigs;
 
     /// <inheritdoc />
+    [JsonInclude]
+    [JsonPropertyName("activeRig")]
     public ModRig? ActiveRig { get; set; }
 
     [JsonInclude]
-    [JsonPropertyName("activeProfile")]
+    [JsonPropertyName("rigs")]
     /// <inheritdoc />
     public List<ModRig> Rigs { get; }
 
@@ -48,6 +49,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
         _distinctModLut = [];
         _rigs = [];
         _activeRig = null;
+        Rigs = _rigs;
     }
 
     #region Implementation of IService
@@ -95,8 +97,8 @@ public class JsonMonolithModLibraryService : IModLibraryService
         return lib;
     }
 
-    public string Serialize() => JsonSerializer.Serialize(this);
-    public static JsonMonolithModLibraryService? Deserialize(string serializedData) => JsonSerializer.Deserialize<JsonMonolithModLibraryService>(serializedData);
+    public string Serialize() => JsonSerializer.Serialize(this, AppConfig.AppSerializerOptions);
+    public static JsonMonolithModLibraryService? Deserialize(string serializedData) => JsonSerializer.Deserialize<JsonMonolithModLibraryService>(serializedData, AppConfig.AppSerializerOptions);
     
     public void SaveToFile(string modLibraryFile)
     {
@@ -106,16 +108,16 @@ public class JsonMonolithModLibraryService : IModLibraryService
     }
 
 
-    public ModEntry? GetModEntry(ModEntryId id) => _runtimeModsByGuid.GetValueOrDefault(id);
+    public ModEntry? GetModEntry(Guid id) => _runtimeModsByGuid.GetValueOrDefault(id);
 
     /// <inheritdoc />
-    public Mod? GetMod(ModId id)
+    public Mod? GetMod(Guid id)
     {
         return null;
     }
 
     /// <inheritdoc />
-    public Mod? GetModFromEntry(ModEntryId id)
+    public Mod? GetModFromEntry(Guid id)
     {
         return null;
     }
@@ -124,7 +126,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
     {
         if(!_distinctModLut.Add(modEntry)) return;
         _modList.Add(modEntry);
-        _runtimeModsByGuid.Add(modEntry.Id, modEntry);
+        _runtimeModsByGuid.TryAdd(modEntry.Id, modEntry);
         Debug.WriteLine($"Added mod '{modEntry.HumanReadableIdentifier}' " +
             $"with ID '{modEntry.Id}' to the library.");
         Debug.WriteLine($"Mod library now contains {_modList.Count} mods.");
@@ -174,7 +176,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
     /// <inheritdoc />
     ModRig IModLibraryService.ActiveRig
     {
-        get => _activeRig;
+        get => _activeRig!;
         set => _activeRig = value;
     }
 
@@ -188,15 +190,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
         
         //visible mods are all the mods that have
         //entries present in the active rig.
-        var entryIdList = ActiveRig.OrderedInstallList;
-        return entryIdList.Select(entryId => {
-            var entry = GetModFromEntry(entryId);
-            if (entry == null)
-                return null;
-            
-            return new ModRigElementMetadata(entry.Id);
-        }).Where(m => m != null)!;
-        
+        return ActiveRig.OrderedInstallList.Select(entry => new ModRigElementMetadata(entry.Id));
     }
 
 
@@ -208,12 +202,6 @@ public class JsonMonolithModLibraryService : IModLibraryService
         Debug.WriteLine("Initializing mod library from serialized data...");
         _distinctModLut = _modList.ToHashSet();
         _runtimeModsByGuid = _modList.ToDictionary(mod => mod.Id);
-        
-        // //get active profile from guid
-        // if (_activeProfileId != Guid.Empty)
-        // {
-        //     ActiveRig = Rigs.FirstOrDefault(profile => profile.RigId == _activeProfileId);
-        // }
         
         Debug.WriteLine($"Mod library initialized successfully with {_modList.Count} mods.");
     }

@@ -1,8 +1,6 @@
-﻿using TS4Plumbob.Core.DataModels.IdTypes;
-
-namespace TS4Plumbob.Core.DataModels;
+﻿namespace TS4Plumbob.Core.DataModels;
 public record AuthorProfile(
-    AuthorId Id,
+    Guid Id,
     string Name,
     string[] NewsUrls,
     string? MainModSiteUrl = null

@@ -37,7 +37,8 @@ public class AppConfig : IService
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         AllowOutOfOrderMetadataProperties = true,
-        AllowTrailingCommas = true
+        AllowTrailingCommas = true,
+        ReferenceHandler = ReferenceHandler.Preserve
     };
 
     [JsonInclude, JsonPropertyName("userSettings")]

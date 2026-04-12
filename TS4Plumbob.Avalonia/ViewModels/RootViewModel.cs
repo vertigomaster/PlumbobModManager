@@ -71,9 +71,17 @@ public partial class RootViewModel : ViewModelBase
     
     private void OnVisibleModsRefreshed()
     {
-        //TODO: after moving from explicit IDs to using ReferenceHandler.Preserve in JsonSerializerOptions, reimplement this
-        
-        // VisibleMods = new ObservableCollection<ModEntryViewModel>(Library.GetVisibleMods());
+        var visibleMods = Library.GetVisibleMods().Select(m => {
+            var entry = Library.GetModEntry(m.ModId);
+            return new ModEntryViewModel {
+                ModName = entry?.HumanReadableIdentifier ?? "Unknown",
+                ModVersion = entry?.ModMetadata?.Version ?? "0.0.0",
+                ModAuthor = entry?.ModMetadata?.Author?.Name ?? "Unknown",
+                ModDescription = "", // TODO: Add description to ModMetadata if needed
+                IsEnabled = true // TODO: Logic for enabled state
+            };
+        });
+        VisibleMods = new ObservableCollection<ModEntryViewModel>(visibleMods);
     }
     
     #endregion

@@ -1,14 +1,13 @@
 ﻿using IDEK.Tools.ShocktroopUtils.Services;
-using TS4Plumbob.Core.DataModels.IdTypes;
 
 namespace TS4Plumbob.Core.DataModels;
 
 public interface IModLibraryService : IService
 {
     string Serialize();
-    ModEntry? GetModEntry(ModEntryId id);
-    Mod? GetMod(ModId id);
-    Mod? GetModFromEntry(ModEntryId id);
+    ModEntry? GetModEntry(Guid id);
+    Mod? GetMod(Guid id);
+    Mod? GetModFromEntry(Guid id);
     void AddMod(ModEntry modEntry);
     void RemoveMod(ModEntry modEntry);
     bool IsValidMod(ModEntry? mod);
@@ -31,7 +30,7 @@ public interface IModLibraryService : IService
 //     Disabled
 // }
 
-public record ModRigElementMetadata(ModId ModId);
+public record ModRigElementMetadata(Guid ModId);
 
 // [Obsolete("Use RuntimeModRigManifest instead")]
 // public class ModRig(RigId rigId, string _name = "Default")

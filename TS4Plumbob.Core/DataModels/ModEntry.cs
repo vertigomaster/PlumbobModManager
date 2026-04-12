@@ -1,10 +1,9 @@
 ﻿using IDEK.Tools.ShocktroopUtils.Services;
-using TS4Plumbob.Core.DataModels.IdTypes;
 
 namespace TS4Plumbob.Core.DataModels;
 
 public record ModEntry(
-    ModEntryId Id,
+    Guid Id,
     string RootPath,
     ModMetadata? ModMetadata
 )
