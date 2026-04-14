@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using IDEK.Tools.ShocktroopUtils.Services;
 
 namespace TS4Plumbob.Core.DataModels;
 
@@ -23,11 +24,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
     [JsonIgnore]
     private HashSet<ModEntry> _distinctModLut;
 
-    [JsonIgnore]
-    private Dictionary<Guid, ModEntry> _runtimeModsByGuid;
-
     public IReadOnlyList<ModEntry> ModList => _modList;
-    public IReadOnlyDictionary<Guid, ModEntry> ModsByGuid => _runtimeModsByGuid;
 
     private ModRig? _activeRig;
     private List<ModRig> _rigs;
@@ -44,7 +41,6 @@ public class JsonMonolithModLibraryService : IModLibraryService
 
     public JsonMonolithModLibraryService()
     {
-        _runtimeModsByGuid = [];
         _modList = [];
         _distinctModLut = [];
         _rigs = [];
@@ -66,10 +62,27 @@ public class JsonMonolithModLibraryService : IModLibraryService
 
     #endregion
 
-    public static JsonMonolithModLibraryService? LoadFromFile(string modLibraryFile)
+    private static string ModLibraryConfigFile
     {
-        Debug.WriteLine("Loading mod library from file: " + modLibraryFile + "...");
-        string modLibraryString = File.ReadAllText(modLibraryFile);
+        get
+        {
+            var appConfig = ServiceLocator.Resolve<AppConfig>();
+            return appConfig.UserSettings.ModLibraryPath;
+        }
+    }
+
+    public static JsonMonolithModLibraryService? LoadFromFile()
+    {
+        string libConfigFile = ModLibraryConfigFile;
+        
+        Debug.WriteLine("Loading mod library from file: " + libConfigFile + "...");
+        if (!File.Exists(libConfigFile))
+        {
+            Debug.WriteLine("Mod library file does not exist: " + libConfigFile);
+            return null;
+        }
+        
+        string modLibraryString = File.ReadAllText(libConfigFile);
         var lib = Deserialize(modLibraryString);
         
         if(lib == null)
@@ -97,55 +110,43 @@ public class JsonMonolithModLibraryService : IModLibraryService
         return lib;
     }
 
-    public string Serialize() => JsonSerializer.Serialize(this, AppConfig.AppSerializerOptions);
-    public static JsonMonolithModLibraryService? Deserialize(string serializedData) => JsonSerializer.Deserialize<JsonMonolithModLibraryService>(serializedData, AppConfig.AppSerializerOptions);
+    public string Serialize() => JsonSerializer.Serialize(this, AppConfig.LibrarySerializerOptions);
+    public static JsonMonolithModLibraryService? Deserialize(string serializedData) => JsonSerializer.Deserialize<JsonMonolithModLibraryService>(serializedData, AppConfig.LibrarySerializerOptions);
     
-    public void SaveToFile(string modLibraryFile)
+    public void SaveToFile()
     {
+        string modLibraryFile = ModLibraryConfigFile;
         Debug.WriteLine("Saving mod library to file: " + modLibraryFile + "...");
         File.WriteAllText(modLibraryFile, Serialize());
         Debug.WriteLine("Mod library saved successfully.");
     }
 
 
-    public ModEntry? GetModEntry(Guid id) => _runtimeModsByGuid.GetValueOrDefault(id);
-
-    /// <inheritdoc />
-    public Mod? GetMod(Guid id)
+    public ModEntry? GetModEntry(ModEntrySlug humanReadableIdentifier)
     {
-        return null;
+        return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == humanReadableIdentifier);
     }
-
-    /// <inheritdoc />
-    public Mod? GetModFromEntry(Guid id)
+    
+    public Mod? GetMod(ModEntrySlug modEntryModEntrySlug)
     {
-        return null;
+        return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == modEntryModEntrySlug).ModConcept;
     }
-
+    
     public bool TryAddMod(ModEntry modEntry)
     {
         //make all the checks before actually mutating state
         if(_distinctModLut.Contains(modEntry))
         {
             Console.WriteLine(
-                $"Failed to add mod '{modEntry.HumanReadableIdentifier}' with ID '{modEntry.Id}' to the library. Duplicate entry detected.");
-            return false;
-        }
-        
-        if(_runtimeModsByGuid.ContainsKey(modEntry.Id))
-        {
-            Console.WriteLine(
-                $"Failed to add mod '{modEntry.HumanReadableIdentifier}' with ID '{modEntry.Id}' to the library. Duplicate entry detected.");
+                $"Failed to add mod '{modEntry.HumanReadableIdentifier}' to the library. Duplicate entry detected.");
             return false;
         }
 
         //mutate state
         _distinctModLut.Add(modEntry);
-        _runtimeModsByGuid.Add(modEntry.Id, modEntry);
         _modList.Add(modEntry);
         
-        Debug.WriteLine($"Added mod '{modEntry.HumanReadableIdentifier}' " +
-            $"with ID '{modEntry.Id}' to the library.");
+        Debug.WriteLine($"Added mod '{modEntry.HumanReadableIdentifier}' to the library.");
         Debug.WriteLine($"Mod library now contains {_modList.Count} mods.");
         return true;
     }
@@ -155,10 +156,8 @@ public class JsonMonolithModLibraryService : IModLibraryService
     {
         if(!_distinctModLut.Remove(modEntry)) return;
         _modList.Remove(modEntry);
-        _runtimeModsByGuid.Remove(modEntry.Id);
         
-        Debug.WriteLine($"Removed mod '{modEntry.HumanReadableIdentifier}' " +
-            $"with ID '{modEntry.Id}' from the library.");
+        Debug.WriteLine($"Removed mod '{modEntry.HumanReadableIdentifier}' from the library.");
         Debug.WriteLine($"Mod library now contains {_modList.Count} mods.");
         
         //TODO: trigger event that can inform all rigs, prob via a service?
@@ -169,10 +168,9 @@ public class JsonMonolithModLibraryService : IModLibraryService
 
     public bool IsValidMod(ModEntry? mod)
     {
-        //exists, is present, and its guid matches
+        //exists and is present
         return mod != null && 
-            _distinctModLut.Contains(mod) && 
-            _runtimeModsByGuid.GetValueOrDefault(mod.Id) == mod;
+            _distinctModLut.Contains(mod);
     }
 
     public ModLibraryValidationResult ValidateLibrary()
@@ -201,14 +199,14 @@ public class JsonMonolithModLibraryService : IModLibraryService
     /// <inheritdoc />
     List<ModRig> IModLibraryService.Rigs => _rigs;
 
-    public IEnumerable<ModRigElementMetadata> GetVisibleMods()
+    public IEnumerable<ModEntry> GetVisibleMods()
     {
         if (ActiveRig == null)
-            return Enumerable.Empty<ModRigElementMetadata>();
+            return Enumerable.Empty<ModEntry>();
         
         //visible mods are all the mods that have
         //entries present in the active rig.
-        return ActiveRig.OrderedInstallList.Select(entry => new ModRigElementMetadata(entry.Id));
+        return ActiveRig.OrderedInstallList;
     }
 
 
@@ -219,7 +217,6 @@ public class JsonMonolithModLibraryService : IModLibraryService
     {
         Debug.WriteLine("Initializing mod library from serialized data...");
         _distinctModLut = _modList.ToHashSet();
-        _runtimeModsByGuid = _modList.ToDictionary(mod => mod.Id);
         
         Debug.WriteLine($"Mod library initialized successfully with {_modList.Count} mods.");
     }

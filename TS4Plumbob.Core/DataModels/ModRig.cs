@@ -27,9 +27,7 @@ public class ModRig
 
     public ModRig(ModRigSnapshot snapshot)
     {
-        var lib = ServiceLocator.Resolve<IModLibraryService>();
         _orderedInstallList = snapshot.OrderedInstallList
-            .Select(id => lib.GetModEntry(id))
             .Where(m => m != null)
             .ToList()!;
         _modLut = new(_orderedInstallList);
@@ -46,7 +44,7 @@ public class ModRig
 
     public static ModRig? FromSerializedData(string serializedData)
     {
-        return JsonSerializer.Deserialize<ModRig>(serializedData, AppConfig.AppSerializerOptions);
+        return JsonSerializer.Deserialize<ModRig>(serializedData, AppConfig.LibrarySerializerOptions);
     }
 
     #endregion
@@ -68,35 +66,25 @@ public class ModRig
         return _orderedInstallList;
     }
     
-    public ModEntry? GetMod(Guid modId)
+    public ModEntry? GetMod(ModEntry mod)
     {
-        return _orderedInstallList.FirstOrDefault(m => m.Id == modId);
+        return _orderedInstallList.FirstOrDefault(m => m == mod);
     }
-    
-    public bool Contains(Guid modId) => 
-        _modLut.Any(m => m.Id == modId);
     
     public bool Contains(ModEntry mod)
     {
         return _modLut.Contains(mod);
     }
 
-    public int GetIndexOf(Guid modId)
+    public int GetIndexOf(ModEntry mod)
     {
-        return _orderedInstallList.FindIndex(m => m.Id == modId);
+        return _orderedInstallList.IndexOf(mod);
     }
     
     #endregion
 
     #region Mod Manipulation
     
-    public bool TryAddModToEnd(Guid modId)
-    {
-        var mod = ServiceLocator.Resolve<IModLibraryService>().GetModEntry(modId);
-        if (mod == null) return false;
-        return ((ModRig)this).TryAddModToEnd(mod);
-    }
-
     private bool Internal_TryAddMod(ModEntry mod)
     {
         if (!ServiceLocator.Resolve<IModLibraryService>().IsValidMod(mod)) return false;

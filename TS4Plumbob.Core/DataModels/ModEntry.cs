@@ -3,14 +3,13 @@
 namespace TS4Plumbob.Core.DataModels;
 
 public record ModEntry(
-    Guid Id,
     string RootPath,
     ModMetadata? ModMetadata
 )
 {
     public static ModEntry CreateNewUnique(string rootPath, ModMetadata? modMetadata = null)
     {
-        return new ModEntry(Guid.NewGuid(), rootPath, modMetadata);
+        return new ModEntry(rootPath, modMetadata);
     }
     
     private bool _hasMetadata;
@@ -21,6 +20,13 @@ public record ModEntry(
     public string RelPath => RootPath.Replace(_AppConfig.UserSettings.ModLibraryPath, "");
     public string HumanReadableIdentifier => ModMetadata?.Name ?? $"UNNAMED ({RelPath})";
     
+    public ModEntrySlug Slug {get; set;}
+    
+    /// <summary>
+    /// A back reference to the logical mod object this is an entry for.
+    /// </summary>
+    public Mod? ModConcept { get; set; }
+
     public bool ExistsOnDisk() 
     {
         return Directory.Exists(RootPath);

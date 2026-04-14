@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IDEK.Tools.ShocktroopUtils.Services;
+using Plumbob.Core.Utils;
 
 namespace TS4Plumbob.Core.DataModels;
 
@@ -37,12 +38,21 @@ public class AppConfig : IService
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         AllowOutOfOrderMetadataProperties = true,
+        AllowTrailingCommas = true//,
+        // ReferenceHandler = ReferenceHandler.Preserve
+    };
+    
+    public static readonly JsonSerializerOptions LibrarySerializerOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        AllowOutOfOrderMetadataProperties = true,
         AllowTrailingCommas = true,
         ReferenceHandler = ReferenceHandler.Preserve
     };
 
     [JsonInclude, JsonPropertyName("userSettings")]
-    public UserSettings UserSettings { get; } = new UserSettings();
+    public UserSettings UserSettings { get; } = new();
 
     //TODO: contemplate whether the version should be compiled into the build for reliability
 
@@ -78,7 +88,7 @@ public class AppConfig : IService
 
     public void SaveToDisk()
     {
-        Debug.WriteLine("Saving AppConfig to disk...");
+        PlumbobMsg.WriteDebugInfo("Saving AppConfig to disk...");
         string serialized = JsonSerializer.Serialize(
             this, AppSerializerOptions);
         
@@ -93,36 +103,36 @@ public class AppConfig : IService
         Directory.CreateDirectory(dir);
         //creates or overwrites configu file with our up to date version.
         File.WriteAllText(MainAppConfig, serialized);
-        Debug.WriteLine("AppConfig saved successfully.");
+        PlumbobMsg.WriteDebugInfo("AppConfig saved successfully.");
     }
 
     public static AppConfig? LoadFromDisk()
     {
-        Debug.WriteLine("Loading AppConfig from disk...");
+        PlumbobMsg.WriteDebugInfo("Loading AppConfig from disk...");
         try
         {
             string fileText = File.ReadAllText(MainAppConfig);
-            AppConfig? result = JsonSerializer.Deserialize<AppConfig>(fileText);
+            AppConfig? result = JsonSerializer.Deserialize<AppConfig>(fileText, AppSerializerOptions);
             if (result != null)
             {
-                Debug.WriteLine("AppConfig loaded successfully.");
+                PlumbobMsg.WriteDebugInfo("AppConfig loaded successfully.");
             }
             else
             {
-                Debug.WriteLine("Warning: failed to deserialize existing AppConfig. Returning null.");
+                PlumbobMsg.WriteDebugInfo("Warning: failed to deserialize existing AppConfig. Returning null.");
             }
             return result;
         }
         catch (DirectoryNotFoundException e)
         {
-            Debug.WriteLine(
+            PlumbobMsg.WriteDebugInfo(
                 $"Warning: AppConfig.LoadFromDisk failed - a directory was missing in " +
                 $"path \"{MainAppConfig}\" : \n\t" + e.Message + " - returning null.");
             return null;
         }
         catch (FileNotFoundException e)
         {
-            Debug.WriteLine(
+            PlumbobMsg.WriteDebugInfo(
                 $"Warning: AppConfig.LoadFromDisk failed - file \"{MainAppConfig}\" not " +
                 $"present: " + e.Message + " - returning null.");
             return null;

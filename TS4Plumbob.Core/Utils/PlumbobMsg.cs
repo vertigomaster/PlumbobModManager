@@ -1,6 +1,6 @@
 ﻿using IDEK.Tools.Logging;
 
-namespace Plumbob.CLI;
+namespace Plumbob.Core.Utils;
 
 public static class PlumbobMsg
 {
