@@ -52,7 +52,7 @@ public class AppConfig : IService
     };
 
     [JsonInclude, JsonPropertyName("userSettings")]
-    public UserSettings UserSettings { get; } = new();
+    public UserSettings UserSettings { get; set; } = new();
 
     //TODO: contemplate whether the version should be compiled into the build for reliability
 
