@@ -21,4 +21,8 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\TS4Plumbob.Core\TS4Plumbob.Core.csproj" />
+  </ItemGroup>
+
 </Project>
