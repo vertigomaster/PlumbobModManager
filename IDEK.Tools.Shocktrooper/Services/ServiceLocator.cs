@@ -43,6 +43,7 @@
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
+using IDEK.Tools.Logging;
 
 namespace IDEK.Tools.ShocktroopUtils.Services
 {
@@ -122,7 +123,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         public static void BindJumpstarter<TService>(Func<object> jumpstarter)
         {
             Jumpstarters[typeof(TService)] = jumpstarter;
-            Debug.WriteLine($"{typeof(TService)} bound.");
+            Log($"{typeof(TService)} bound.");
         }
         
         /// <summary>
@@ -422,7 +423,8 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 #if UNITY_5_3_OR_NEWER
             UnityEngine.Debug.Log(formattedMsg);
 #else
-            Console.WriteLine(formattedMsg);
+            ConsoleLog.Log(formattedMsg);
+            // Console.WriteLine(formattedMsg);
 #endif
         }
 
@@ -433,7 +435,8 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 #if UNITY_5_3_OR_NEWER
             UnityEngine.Debug.LogError(formattedMsg);
 #else
-            Console.WriteLine(formattedMsg);
+            ConsoleLog.LogError(formattedMsg);
+            // Console.WriteLine(formattedMsg);
 #endif
         }
     }
