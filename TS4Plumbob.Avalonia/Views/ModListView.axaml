@@ -15,7 +15,7 @@
             <Border Background="ForestGreen">
                 <Border Margin="10">
                     <TextBlock Text="{
-                        Binding ModLibraryFolder.Path.LocalPath, 
+                        Binding ModLibraryFolderString, 
                         StringFormat='Current Folder: {0}',
                         FallbackValue=Current Folder: NONE}"/>
                 </Border>
@@ -40,11 +40,13 @@
 
                 <ScrollViewer>
                     <!-- TODO: Finish after the model's explicit ID clutter is take care of -->
-                    <ItemsControl>
+                    <ItemsControl ItemsSource="{Binding VisibleMods}">
                         <!--Defines the control's panel that will display our items-->
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <ListBox/>
+                                <Panel>
+                                    <ListBox/>
+                                </Panel>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         

@@ -15,7 +15,7 @@
 
         <TextBlock
             Text="{
-                Binding ModLibraryFolder.Path.LocalPath,
+                Binding ModLibraryFolderString,
                 FallbackValue='No folder selected'
             }"
             HorizontalAlignment="Center" Margin="5" />

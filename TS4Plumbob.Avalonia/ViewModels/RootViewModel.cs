@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using IDEK.Tools.ShocktroopExtensions;
 using IDEK.Tools.ShocktroopUtils.Services;
+using Plumbob.Core.Utils;
 using TS4Plumbob.Core;
 using TS4Plumbob.Core.DataModels;
 
@@ -34,15 +36,20 @@ public partial class RootViewModel : ViewModelBase
     /// </summary>
     public string AppTitle => Config?.FullAppName ?? "Plumbob Mod Manager";
     
+    // [ObservableProperty] 
+    // [NotifyPropertyChangedFor(nameof(HasLibraryFolder))]
+    // private IStorageFolder? _modLibraryFolder;
+    
     /// <summary>
     /// The currently selected mod library folder. 
     /// The [ObservableProperty] attribute automatically generates a 'ModLibraryFolder' property 
     /// that notifies the UI when its value changes.
     /// </summary>
-    [ObservableProperty] 
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLibraryFolder))]
-    private IStorageFolder? _modLibraryFolder;
-    public bool HasLibraryFolder => ModLibraryFolder != null;
+    private string _modLibraryFolderString;
+    
+    public bool HasLibraryFolder => !ModLibraryFolderString.IsNullOrWhitespace();
     
     //This contains an editable list of all mods that should be visible based on application and model state. Generally that means it is impacted by the current rig/profile and any filters.
     public ObservableCollection<ModEntryViewModel> VisibleMods { get; set; }
@@ -52,6 +59,9 @@ public partial class RootViewModel : ViewModelBase
     public RootViewModel()
     {
         //Initialize properties
+        ModLibraryFolderString = Config.UserSettings.ModLibraryPath;
+        
+        PlumbobMsg.WriteDebugInfo("RootViewModel initialized with ModLibraryFolderString: " + ModLibraryFolderString);
     }
 
     #region Property Change Callbacks
@@ -71,8 +81,7 @@ public partial class RootViewModel : ViewModelBase
     
     private void OnVisibleModsRefreshed()
     {
-        var visibleMods = Library.GetVisibleMods().Select(m => {
-            var entry = Library.GetModEntry(m.ModId);
+        var visibleMods = Library.GetVisibleMods().Select(entry => {
             return new ModEntryViewModel {
                 ModName = entry?.HumanReadableIdentifier ?? "Unknown",
                 ModVersion = entry?.ModMetadata?.Version ?? "0.0.0",
@@ -121,33 +130,34 @@ public partial class RootViewModel : ViewModelBase
         if (pickerTask.IsFaulted)
         {
             //TODO: show error message
-            Console.WriteLine("[UpdateModLibraryFolder] " +
-                "Something went wrong. " +
+            PlumbobMsg.WriteUserMsg("Something went wrong. " +
                 "User selection was likely invalid.");
             return;
         }
 
         if (pickerTask.IsCanceled)
         {
-            Console.WriteLine("[UpdateModLibraryFolder] " +
-                "User cancelled folder selection.");
+            PlumbobMsg.WriteUserMsg("Something went wrong. Picker TASK was cancelled, " +
+                "which counterintuitively is not what happens when the user clicks the cancel button.");
             return;
         }
         
         if(result is null)
         {
-            Console.WriteLine("[UpdateModLibraryFolder] Something went wrong. Picker task was successful but result was null.");
+            PlumbobMsg.WriteUserMsg("User cancelled folder selection.");
+            
             return;
         }
         
         if (pickerTask.IsCompletedSuccessfully)
         {
-            Console.WriteLine("[UpdateModLibraryFolder] User selected folder: " + result.Path.LocalPath);
+            ModLibraryFolderString = result?.Path.LocalPath ?? "";
+            
+            PlumbobMsg.WriteUserMsg("User selected folder: " + ModLibraryFolderString);
             // Update our observable property with the selected folder.
-            ModLibraryFolder = result;
 
             //update model
-            Config.UserSettings.ModLibraryPath = ModLibraryFolder?.Path.LocalPath;
+            Config.UserSettings.ModLibraryPath = ModLibraryFolderString;
             Config.SaveToDisk();
         }
     }
@@ -157,8 +167,13 @@ public partial class RootViewModel : ViewModelBase
     {
         IStorageFolder? result = await OpenFolderPicker.Handle("Select Mod to Copy into Library");
         if (result is null) return;
+        
+        //TODO: popup new window asking about mod setup
 
-        Library.TryAddMod(ModEntry.CreateNewUnique(result.Path.LocalPath, null));
+        if (Library.TryAddMod(ModEntry.CreateNewUnique(result.Path.LocalPath, null)))
+        {
+            Library.SaveToFile();
+        }
     }
     
     #endregion
