@@ -139,7 +139,12 @@ public class Trove(string name) : IDisposable
     /// <remarks>We recommend giving your elements explicit names to avoid accidentally re-adding them semantically</remarks>
     public Trove AddCleanup(string tag, IDisposable disposableTroveItem)
     {
-        _items.Add(tag, disposableTroveItem);
+        Debug.WriteLine($"fooble [Trove] Adding key {tag} to {Name}"); 
+        if (!_items.TryAdd(tag, disposableTroveItem))
+        {
+            Console.WriteLine($"[Trove] Warning - Key {tag} already exists in {Name}, ignoring.");
+        }
+
         return this;
     }
 
