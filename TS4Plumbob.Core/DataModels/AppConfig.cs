@@ -38,8 +38,8 @@ public class AppConfig : IService
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         AllowOutOfOrderMetadataProperties = true,
-        AllowTrailingCommas = true//,
-        // ReferenceHandler = ReferenceHandler.Preserve
+        AllowTrailingCommas = true,
+        ReferenceHandler = ReferenceHandler.Preserve
     };
     
     public static readonly JsonSerializerOptions LibrarySerializerOptions = new()

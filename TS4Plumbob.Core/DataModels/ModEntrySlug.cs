@@ -9,6 +9,11 @@ public record ModEntrySlug : ModSlug
     /// The version of the mod.
     /// </summary>
     public string Version { get; init; }
+
+    public ModEntrySlug()
+    {
+        Version = string.Empty;
+    }
         
     public ModEntrySlug(string mainId, string version, int offset) : base(mainId, offset)
     {

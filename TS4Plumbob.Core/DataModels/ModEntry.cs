@@ -1,12 +1,30 @@
-﻿using IDEK.Tools.ShocktroopUtils.Services;
+﻿using System.Text.Json.Serialization;
+using IDEK.Tools.ShocktroopUtils.Services;
 
 namespace TS4Plumbob.Core.DataModels;
 
-public record ModEntry(
-    string RootPath,
-    ModMetadata? ModMetadata
-)
+public record ModEntry
 {
+    //updated from primary constructor syntax to the older and more stable properties + paramless ctor.
+    //The former does not handle serialization well; primarily I think because it means
+    //you can't create a "blank" instance or dynamically construct an immutable record in full
+    //unless you have direct access to all of the properties being serialized.
+    //This likely applies to all types, at least when working with System.Text.Json
+    
+    [JsonInclude, JsonPropertyName("rootPath")]
+    public string RootPath { get; init; }
+
+    [JsonInclude, JsonPropertyName("modMetadata")]
+    public ModMetadata? ModMetadata { get; init; }
+
+    public ModEntry() { }
+
+    public ModEntry(string rootPath, ModMetadata? modMetadata)
+    {
+        RootPath = rootPath;
+        ModMetadata = modMetadata;
+    }
+
     public static ModEntry CreateNewUnique(string rootPath, ModMetadata? modMetadata = null)
     {
         return new ModEntry(rootPath, modMetadata);

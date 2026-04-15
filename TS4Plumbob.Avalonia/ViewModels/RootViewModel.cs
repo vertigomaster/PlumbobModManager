@@ -48,6 +48,9 @@ public partial class RootViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLibraryFolder))]
     private string _modLibraryFolderString;
+
+    [ObservableProperty]
+    private bool _isModActionsSidebarVisible = false;
     
     public bool HasLibraryFolder => !ModLibraryFolderString.IsNullOrWhitespace();
     
@@ -81,14 +84,14 @@ public partial class RootViewModel : ViewModelBase
     
     private void OnVisibleModsRefreshed()
     {
-        var visibleMods = Library.GetVisibleMods().Select(entry => {
-            return new ModEntryViewModel {
+        var visibleMods = Library.GetVisibleMods().Select(
+            entry => new ModEntryViewModel {
                 ModName = entry?.HumanReadableIdentifier ?? "Unknown",
                 ModVersion = entry?.ModMetadata?.Version ?? "0.0.0",
                 ModAuthor = entry?.ModMetadata?.Author?.Name ?? "Unknown",
-                ModDescription = "", // TODO: Add description to ModMetadata if needed
+                // TODO: Add description to ModMetadata if needed
+                ModDescription = "", 
                 IsEnabled = true // TODO: Logic for enabled state
-            };
         });
         VisibleMods = new ObservableCollection<ModEntryViewModel>(visibleMods);
     }
@@ -174,6 +177,14 @@ public partial class RootViewModel : ViewModelBase
         {
             Library.SaveToFile();
         }
+        
+        OnVisibleModsRefreshed();
+    }
+
+    [RelayCommand]
+    private async Task ToggleModActionsSidebar()
+    {
+        IsModActionsSidebarVisible = !IsModActionsSidebarVisible;
     }
     
     #endregion

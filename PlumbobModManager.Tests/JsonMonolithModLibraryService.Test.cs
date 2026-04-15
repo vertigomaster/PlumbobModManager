@@ -92,6 +92,40 @@ public class JsonMonolithModLibraryService_Test
     }
 
     [Test]
+    public void Json_CircularReferenceTest()
+    {
+        string testFile = "circular_test.json";
+        string testDir = BASE_DIR;
+        string testpath = Path.Combine(testDir, testFile);
+        
+        //create the lib
+        var lib = new JsonMonolithModLibraryService();
+        
+        //create a Mod and a ModEntry that point to each other
+        var modEntry = new ModEntry("fake mod path", null);
+        var mod = new Mod { Slug = new ModSlug("test-slug", 0), Template = modEntry };
+        modEntry.ModConcept = mod;
+        mod.Entries.Add(modEntry);
+        
+        lib.TryAddMod(modEntry);
+        
+        //save it
+        lib.SaveToFile(testpath);
+        
+        string savedJson = File.ReadAllText(testpath);
+        Console.WriteLine("[DEBUG_LOG] Saved Circular JSON: " + savedJson);
+        
+        //read it back
+        var reloadedLib = JsonMonolithModLibraryService.Deserialize(savedJson);
+        
+        Assert.That(reloadedLib.ModList.Count, Is.EqualTo(1));
+        var reloadedEntry = reloadedLib.ModList[0];
+        Assert.That(reloadedEntry.ModConcept, Is.Not.Null);
+        Assert.That(reloadedEntry.ModConcept.Template, Is.SameAs(reloadedEntry), "Template should point back to the same ModEntry instance");
+        Assert.That(reloadedEntry.ModConcept.Entries[0], Is.SameAs(reloadedEntry), "Entries[0] should point back to the same ModEntry instance");
+    }
+
+    [Test]
     public void Json_ReserializeTest()
     {
         string testFile = "test.json";

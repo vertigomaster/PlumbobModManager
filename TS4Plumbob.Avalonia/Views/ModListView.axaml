@@ -11,7 +11,7 @@
         <!-- <SplitView HorizontalAlignment="Left"> -->
         <!--     <Rectangle/> -->
         <!-- </SplitView> -->
-        <StackPanel Background="DarkSeaGreen">
+        <StackPanel Background="DarkSeaGreen" Orientation="Vertical">
             <Border Background="ForestGreen">
                 <Border Margin="10">
                     <TextBlock Text="{
@@ -22,56 +22,72 @@
             </Border>
 
             <StackPanel Orientation="Horizontal">
-                
-                <StackPanel Margin="10">
-                    <TextBlock Text="Actions" 
-                               FontStyle="Italic" 
-                               HorizontalAlignment="Center"/>
-                    
-                    
-                    <Button HorizontalAlignment="Stretch" 
-                            Command="{Binding CopyModToLibraryCommand}"
-                            IsEnabled="{Binding !CopyModToLibraryCommand.IsRunning}">
-                        Copy Mod To Library
-                    </Button>
-                    <Button HorizontalAlignment="Stretch">
-                        Install Mod From Archive
-                    </Button>
-                </StackPanel>
+                <SplitView PanePlacement="Left" 
+                           DisplayMode="CompactInline" 
+                           IsPaneOpen="{Binding IsModActionsSidebarVisible}"
+                           CompactPaneLength="320" OpenPaneLength="320">
+                    <SplitView.Pane>
+                        <StackPanel Margin="10">
+                            <Button Content="☰" 
+                                    Command="{Binding ToggleModActionsSidebarCommand}"
+                                    Width="32" HorizontalAlignment="Left"/>
+                            <StackPanel IsVisible="{Binding IsModActionsSidebarVisible}">
+                                
+                                <TextBlock Text="Actions"
+                                           Margin="10"
+                                           FontStyle="Italic"
+                                           HorizontalAlignment="Center" />
 
-                <ScrollViewer>
-                    <!-- TODO: Finish after the model's explicit ID clutter is take care of -->
-                    <ItemsControl ItemsSource="{Binding VisibleMods}">
-                        <!--Defines the control's panel that will display our items-->
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <Panel>
-                                    <ListBox/>
-                                </Panel>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        
-                        <!--Defines the control's individual item template - 
-                        used to form each ITEM within the PANEL template. 
-                        Each item within the ItemsSource bound to the control 
-                        will be displayed using an instance of the item template-->
-                        <ItemsControl.ItemTemplate>
-                            <!-- The DataContext of this scope is of the 
-                            type stored in the source collection.
-                            Beyond that,it's just regular display -->
-                            <DataTemplate>
-                                <Border BorderBrush="Gray" BorderThickness="1" 
-                                        Padding="10" CornerRadius="10">
-                                    <StackPanel Orientation="Horizontal">
-                                        <!-- TODO: need to fix model so that we can bind the VM data -->
-                                        <!-- <CheckBox IsChecked="{Binding IsEnabled}"></CheckBox> -->
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    
-                </ScrollViewer>
+                                <Button HorizontalAlignment="Stretch"
+                                        Command="{Binding CopyModToLibraryCommand}"
+                                        IsEnabled="{Binding !CopyModToLibraryCommand.IsRunning}">
+                                    Copy Mod To Library
+                                </Button>
+                                <Button HorizontalAlignment="Stretch">
+                                    Install Mod From Archive
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </SplitView.Pane>
+
+                    <Border Background="Red">
+                        <ScrollViewer>
+                            <!-- TODO: Finish after the model's explicit ID clutter is take care of -->
+                            <ItemsControl ItemsSource="{Binding VisibleMods}">
+                                <!--Defines the control's panel that will display our items-->
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Panel>
+                                            <ListBox />
+                                        </Panel>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <!--Defines the control's individual item template - 
+                            used to form each ITEM within the PANEL template. 
+                            Each item within the ItemsSource bound to the control 
+                            will be displayed using an instance of the item template-->
+                                <ItemsControl.ItemTemplate>
+                                    <!-- The DataContext of this scope is of the 
+                                type stored in the source collection.
+                                Beyond that,it's just regular display -->
+                                    <DataTemplate>
+                                        <Border BorderBrush="Gray" BorderThickness="1"
+                                                Padding="10" CornerRadius="10">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- TODO: need to fix model so that we can bind the VM data -->
+                                                <CheckBox IsChecked="{Binding IsEnabled}"></CheckBox>
+                                                <TextBlock Text="{Binding ModName}"/>
+                                                <Rectangle Width="4" Fill="DarkGray"/>
+                                                <TextBlock Text="{Binding ModVersion}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </SplitView>
             </StackPanel>
         </StackPanel>
             

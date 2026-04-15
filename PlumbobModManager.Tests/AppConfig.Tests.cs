@@ -5,23 +5,23 @@ namespace PlumbobModManager.Tests;
 
 public class AppConfigTests
 {
-    private const string MODLIB_PATH = @"D:\Modding\Sims 4\PlumbobMM\library";
-    private const string RIGS_ROOT_PATH = @"D:\Modding\Sims 4\PlumbobMM\rigs";
+    private static readonly string MODLIB_PATH = @"D:\Modding\Sims 4\PlumbobMM\library".Replace(@"\", @"\\");
+    private static readonly string RIGS_ROOT_PATH = @"D:\Modding\Sims 4\PlumbobMM\rigs".Replace(@"\", @"\\");
     private const string FULL_VERSION_STRING = "1.12.133-Alpha";
     private const string SHORT_VERSION_STRING = "1.12.133";
     private const string FULL_APP_NAME = "Testing TS4 Plumbob Mod Manager";
     private const string SHORT_APP_NAME = "TS4PlumbobMM";
     
-    private const string SIMPLE_CONFIG_JSON = $$"""
+    private string SIMPLE_CONFIG_JSON => $$"""
         {
           "userSettings": {
             "modLibraryPath": "{{MODLIB_PATH}}",
-            "rigsRootPath": "{{RIGS_ROOT_PATH}}",
+            "rigsRootPath": "{{RIGS_ROOT_PATH}}"
           },
           "version": "{{FULL_VERSION_STRING}}",
           "shortVersion": "{{SHORT_VERSION_STRING}}",
           "appName": "{{FULL_APP_NAME}}",
-          "shortAppName": "{{SHORT_APP_NAME}}",
+          "shortAppName": "{{SHORT_APP_NAME}}"
         }
         """;
     
@@ -53,9 +53,11 @@ public class AppConfigTests
         Assert.That(config.ShortAppName, Is.EqualTo(SHORT_APP_NAME), "ShortAppName was not deserialized correctly");
 
         Assert.That(config.UserSettings, Is.Not.Null, "UserSettings should not be null");
-        Assert.That(config.UserSettings.ModLibraryPath, Is.EqualTo(MODLIB_PATH),
+        
+        //I feel like there's a better way than just swapping between \ and \\
+        Assert.That(config.UserSettings.ModLibraryPath, Is.EqualTo(MODLIB_PATH.Replace(@"\\", @"\")),
             "ModLibraryPath was not deserialized correctly");
-        Assert.That(config.UserSettings.RigsRootPath, Is.EqualTo(RIGS_ROOT_PATH),
+        Assert.That(config.UserSettings.RigsRootPath, Is.EqualTo(RIGS_ROOT_PATH.Replace(@"\\", @"\")),
             "RigsRootPath was not deserialized correctly");
     }       
 }
@@ -147,8 +149,8 @@ public class ModEntryTests
     public void ModEntry_CreationTest()
     {
         var testModEntry = new ModEntry(
-            RootPath: TestModPath, 
-            ModMetadata: null);
+            rootPath: TestModPath, 
+            modMetadata: null);
         
         Assert.That(testModEntry, Is.Not.Null, "ModEntry should not be null");
         Assert.That(testModEntry.RootPath, Is.EqualTo(TestModPath), 
@@ -159,8 +161,8 @@ public class ModEntryTests
     public void ModEntry_CreationTest2()
     {
         var testModEntry = new ModEntry(
-            RootPath: TestModPath,
-            ModMetadata: null);
+            rootPath: TestModPath,
+            modMetadata: null);
 
         // Assert.That(testModEntry.ExistsOnDisk(), Is.True, "ModEntry should exist on disk");
         

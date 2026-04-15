@@ -12,6 +12,12 @@ public record ModSlug
     /// </summary>
     public int Offset { get; init; }
 
+    public ModSlug()
+    {
+        MainId = string.Empty;
+        Offset = 0;
+    }
+    
     public ModSlug(string mainId, int offset)
     {
         MainId = SanitizeForSlug(mainId);

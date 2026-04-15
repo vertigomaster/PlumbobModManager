@@ -16,14 +16,14 @@ public class JsonMonolithModLibraryService : IModLibraryService
     //stores them all
     //caches
     
-
     [JsonInclude]
     [JsonPropertyName("mods")]
-    private List<ModEntry> _modList;
+    internal List<ModEntry> _modList;
 
     [JsonIgnore]
     private HashSet<ModEntry> _distinctModLut;
 
+    [JsonIgnore]
     public IReadOnlyList<ModEntry> ModList => _modList;
 
     private ModRig? _activeRig;
@@ -67,7 +67,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
         get
         {
             var appConfig = ServiceLocator.Resolve<AppConfig>();
-            return appConfig.UserSettings.ModLibraryPath;
+            return Path.Combine(appConfig.UserSettings.ModLibraryPath, "modlibrary.json");
         }
     }
 
