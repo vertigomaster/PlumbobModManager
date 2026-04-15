@@ -21,5 +21,5 @@ public interface IModLibraryService : IService
     List<ModRig> Rigs { get; }
 
     IEnumerable<ModEntry> GetVisibleMods();
-    void SaveToFile();
+    void SaveToFile(string? overridePath=null);
 }

@@ -62,7 +62,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
 
     #endregion
 
-    private static string ModLibraryConfigFile
+    internal static string ModLibraryConfigFile
     {
         get
         {
@@ -113,9 +113,10 @@ public class JsonMonolithModLibraryService : IModLibraryService
     public string Serialize() => JsonSerializer.Serialize(this, AppConfig.LibrarySerializerOptions);
     public static JsonMonolithModLibraryService? Deserialize(string serializedData) => JsonSerializer.Deserialize<JsonMonolithModLibraryService>(serializedData, AppConfig.LibrarySerializerOptions);
     
-    public void SaveToFile()
+    public void SaveToFile(string? overridePath=null)
     {
-        string modLibraryFile = ModLibraryConfigFile;
+        string modLibraryFile = overridePath ?? ModLibraryConfigFile;
+        
         Debug.WriteLine("Saving mod library to file: " + modLibraryFile + "...");
         
         string? modLibraryDir = Path.GetDirectoryName(modLibraryFile);

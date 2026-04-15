@@ -23,7 +23,7 @@ public class UserSettings
     /// <remarks>
     /// Rigs do not store actual source mod files, they only store rig metadata about them.
     /// </remarks>
-    [JsonInclude, JsonPropertyName("profileRootPath")]
+    [JsonInclude, JsonPropertyName("rigsRootPath")]
     public string RigsRootPath { get; set; }
 }
 

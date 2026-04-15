@@ -1,10 +1,11 @@
-﻿using System.Diagnostics;
-using IDEK.Tools.Logging;
+﻿using System.Runtime.CompilerServices;
 using IDEK.Tools.ShocktroopUtils.Services;
 using IDEK.Tools.Trove;
 using IDEK.Tools.Utilities;
 using Plumbob.Core.Utils;
 using TS4Plumbob.Core.DataModels;
+
+[assembly: InternalsVisibleTo("PlumbobModManager.Tests")]
 
 namespace TS4Plumbob.Core;
 

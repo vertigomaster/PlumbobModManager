@@ -7,9 +7,9 @@ public record ModMetadata(
     string Version, 
     AuthorProfile Author,
     
-    //not sure if we actually need to specify 
-    [property: JsonPropertyName("links")] 
-    Dictionary<string,string> Links, 
+    // //not sure if we actually need to specify 
+    // [property: JsonPropertyName("links")] 
+    // Dictionary<string,string> Links, 
     
     DateTime? LastUpdated = null
 );

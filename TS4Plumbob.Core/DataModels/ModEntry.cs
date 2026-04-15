@@ -17,7 +17,15 @@ public record ModEntry(
     
     private AppConfig _AppConfig => ServiceLocator.Resolve<AppConfig>();
     
-    public string RelPath => RootPath.Replace(_AppConfig.UserSettings.ModLibraryPath, "");
+    public string RelPath
+    {
+        get
+        {
+            string? libPath = _AppConfig?.UserSettings?.ModLibraryPath;
+            return libPath is null ? RootPath : RootPath.Replace(libPath, "");
+        }
+    }
+
     public string HumanReadableIdentifier => ModMetadata?.Name ?? $"UNNAMED ({RelPath})";
     
     public ModEntrySlug Slug {get; set;}
