@@ -257,7 +257,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// either rework your code so that it will be available,
         /// or, if you're in a pinch, call either <see cref="IsRegistered{T}"/> or <see cref="TryJumpStart{T}"/>.
         /// </remarks>
-        public static T Resolve<T>(bool jumpStartIfNotFound = true)
+        public static T? Resolve<T>(bool jumpStartIfNotFound = true)
         {
             // return (T)Services[typeof(T)];
             bool success = Services.TryGetValue(typeof(T), out object instance);
@@ -293,13 +293,13 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             return default;
         }
 
-        public static bool TryResolve<T>(out T serviceInstance, bool jumpStartIfNotFound = true)
+        public static bool TryResolve<T>(out T? serviceInstance, bool jumpStartIfNotFound = true)
         {
-            bool success = Services.TryGetValue(typeof(T), out object instance);
+            bool success = Services.TryGetValue(typeof(T), out var instance);
 
             if (success)
             {
-                serviceInstance = (T)instance;
+                serviceInstance = (T?)instance;
                 return true;
             }
 
@@ -328,7 +328,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             if (Jumpstarters.TryGetValue(typeof(T), out Func<object> jumpstarter))
             {
                 Log($"Jumpstarting {typeof(T)}...");
-                T output = (T)jumpstarter?.Invoke();
+                T output = (T)jumpstarter.Invoke();
                 Log($"{typeof(T)} now resolvable.");
 
                 Register<T>(output);
