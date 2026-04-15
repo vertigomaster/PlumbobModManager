@@ -1,4 +1,5 @@
-﻿using IDEK.Tools.ShocktroopUtils.Services;
+﻿using System.Diagnostics;
+using IDEK.Tools.ShocktroopUtils.Services;
 using TS4Plumbob.Core.DataModels;
 
 namespace PlumbobModManager.Tests;
@@ -210,5 +211,22 @@ public class JsonMonolithModLibraryService_Test
         lib.TryAddMod(testModEntry);
         
         Assert.That(lib.ModList, Has.Count.EqualTo(1), "Library count should reflect the added mod");
+        
+        Debug.WriteLine("Mod 0: " + lib.ModList[0]);
+
+        //need to first add the mod to a rig before it vis
+        IEnumerable<ModEntry> v = lib.GetVisibleMods();
+    }
+    
+    [Test]
+    public void GetVisibleMods_CountTest()
+    {
+        //create the lib
+        var lib = new JsonMonolithModLibraryService();
+        
+        Assert.That(lib.GetVisibleMods, Is.Not.Null, "Visible mods collection should be initialized");
+        Assert.That(lib.GetVisibleMods().Count, Is.EqualTo(0), "Visible mods collection should be empty initially");
+        
+        lib.TryAddMod(ModEntry.CreateNewUnique("testpath", null));
     }
 }

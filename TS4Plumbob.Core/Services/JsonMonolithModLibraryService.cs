@@ -27,17 +27,19 @@ public class JsonMonolithModLibraryService : IModLibraryService
     public IReadOnlyList<ModEntry> ModList => _modList;
 
     private ModRig? _activeRig;
-    private List<ModRig> _rigs;
+
+    [JsonInclude]
+    [JsonPropertyName("rigs")]
+    internal List<ModRig> _rigs;
 
     /// <inheritdoc />
     [JsonInclude]
     [JsonPropertyName("activeRig")]
     public ModRig? ActiveRig { get; set; }
 
-    [JsonInclude]
-    [JsonPropertyName("rigs")]
+    [JsonIgnore]
     /// <inheritdoc />
-    public List<ModRig> Rigs { get; }
+    public IReadOnlyList<ModRig> Rigs => _rigs;
 
     public JsonMonolithModLibraryService()
     {
@@ -45,7 +47,6 @@ public class JsonMonolithModLibraryService : IModLibraryService
         _distinctModLut = [];
         _rigs = [];
         _activeRig = null;
-        Rigs = _rigs;
     }
 
     #region Implementation of IService
@@ -55,6 +56,8 @@ public class JsonMonolithModLibraryService : IModLibraryService
     {
         //is this a good idea? prob not
         // ValidateLibrary();
+
+        CreateDefaultRigIfNone();
     }
 
     /// <inheritdoc />
@@ -111,8 +114,9 @@ public class JsonMonolithModLibraryService : IModLibraryService
     }
 
     public string Serialize() => JsonSerializer.Serialize(this, AppConfig.LibrarySerializerOptions);
+
     public static JsonMonolithModLibraryService? Deserialize(string serializedData) => JsonSerializer.Deserialize<JsonMonolithModLibraryService>(serializedData, AppConfig.LibrarySerializerOptions);
-    
+
     public void SaveToFile(string? overridePath=null)
     {
         string modLibraryFile = overridePath ?? ModLibraryConfigFile;
@@ -136,12 +140,12 @@ public class JsonMonolithModLibraryService : IModLibraryService
     {
         return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == humanReadableIdentifier);
     }
-    
+
     public Mod? GetMod(ModEntrySlug modEntryModEntrySlug)
     {
         return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == modEntryModEntrySlug).ModConcept;
     }
-    
+
     public bool TryAddMod(ModEntry modEntry)
     {
         //make all the checks before actually mutating state
@@ -226,10 +230,25 @@ public class JsonMonolithModLibraryService : IModLibraryService
     private void InitializeFromSerializedData()
     {
         Debug.WriteLine("Initializing mod library from serialized data...");
-        _distinctModLut = _modList.ToHashSet();
+        _distinctModLut = _modList.ToHashSet(); 
         
         Debug.WriteLine($"Mod library initialized successfully with {_modList.Count} mods.");
     }
 
+    private void CreateDefaultRigIfNone()
+    {
+        if (_activeRig == null)
+        {
+            if (_rigs.Count > 0)
+            {
+                _activeRig = _rigs[0];
+            } 
+            else
+            {
+                _activeRig = new ModRig();
+                _rigs.Add(_activeRig);
+            }
+        }
+    }
 }
 

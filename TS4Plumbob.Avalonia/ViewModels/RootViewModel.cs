@@ -55,7 +55,8 @@ public partial class RootViewModel : ViewModelBase
     public bool HasLibraryFolder => !ModLibraryFolderString.IsNullOrWhitespace();
     
     //This contains an editable list of all mods that should be visible based on application and model state. Generally that means it is impacted by the current rig/profile and any filters.
-    public ObservableCollection<ModEntryViewModel> VisibleMods { get; set; }
+    [ObservableProperty]
+    private ObservableCollection<ModEntryViewModel> _visibleMods;
 
     #endregion
 
@@ -125,6 +126,7 @@ public partial class RootViewModel : ViewModelBase
     [RelayCommand(AllowConcurrentExecutions = false)]
     private async Task UpdateModLibraryFolder()
     {
+        
         // Trigger the interaction and wait for the UI to provide a result (or null if cancelled).
         var pickerTask = OpenFolderPicker.Handle("Select Mod Library Folder");
         
@@ -165,7 +167,7 @@ public partial class RootViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = false)]
     private async Task CopyModToLibrary()
     {
         IStorageFolder? result = await OpenFolderPicker.Handle("Select Mod to Copy into Library");
@@ -181,7 +183,7 @@ public partial class RootViewModel : ViewModelBase
         OnVisibleModsRefreshed();
     }
 
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = false)]
     private async Task ToggleModActionsSidebar()
     {
         IsModActionsSidebarVisible = !IsModActionsSidebarVisible;
