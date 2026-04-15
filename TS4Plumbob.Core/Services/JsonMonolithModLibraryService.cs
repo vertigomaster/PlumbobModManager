@@ -117,7 +117,16 @@ public class JsonMonolithModLibraryService : IModLibraryService
     {
         string modLibraryFile = ModLibraryConfigFile;
         Debug.WriteLine("Saving mod library to file: " + modLibraryFile + "...");
+        
+        string? modLibraryDir = Path.GetDirectoryName(modLibraryFile);
+        if (modLibraryDir == null)
+        {
+            Debug.WriteLine("Mod library directory is null, cannot save file.");
+            return;
+        }
+        Directory.CreateDirectory(modLibraryDir);
         File.WriteAllText(modLibraryFile, Serialize());
+        
         Debug.WriteLine("Mod library saved successfully.");
     }
 
