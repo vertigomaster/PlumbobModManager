@@ -119,7 +119,7 @@ public partial class RootViewModel : ViewModelBase
     /// Anyone should be able to call this;
     /// it'll generally be done from either the options menu view or from the NoDataView
     /// </remarks>
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = false)]
     private async Task UpdateModLibraryFolder()
     {
         // Trigger the interaction and wait for the UI to provide a result (or null if cancelled).

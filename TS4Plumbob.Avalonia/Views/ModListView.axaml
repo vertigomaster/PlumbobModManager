@@ -30,7 +30,8 @@
                     
                     
                     <Button HorizontalAlignment="Stretch" 
-                            Command="{Binding CopyModToLibraryCommand}">
+                            Command="{Binding CopyModToLibraryCommand}"
+                            IsEnabled="{Binding !CopyModToLibraryCommand.IsRunning}">
                         Copy Mod To Library
                     </Button>
                     <Button HorizontalAlignment="Stretch">

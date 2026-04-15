@@ -11,6 +11,7 @@
             HorizontalAlignment="Stretch"
             HorizontalContentAlignment="Center"
             Command="{ Binding UpdateModLibraryFolderCommand }"
+            IsEnabled="{Binding !UpdateModLibraryFolderCommand.IsRunning}"
             Content="Select Mod Library Folder"/>
 
         <TextBlock
