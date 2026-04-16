@@ -153,7 +153,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
                 return registeredService;
             }
 
-            if (!serviceInstance.GetType().IsAssignableFrom(type))
+            if (!type.IsInstanceOfType(serviceInstance))
             {
                 LogError($"Registration Failed; Object {serviceInstance} does not derive from the service type!");
                 return null;
@@ -350,19 +350,51 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         // }
 
         /// <summary>
-        /// Clears all registered services. BUT does not perform any dispose or cleanup on the services.
+        /// Clears all registered services. Does not clear bindings.
         /// </summary>
-        public static void Reset()
+        public static void ClearAllServices()
         {
             Log("Resetting Service Locator...");
             
             foreach (KeyValuePair<Type, object> service in Services)
             {
                 Unregister(service.Key);
+                
+                if(service.Value is IDisposable disposable)
+                    disposable.Dispose();
             }
+            
             //just for good measure
             Services.Clear();
             Log("Service Locator Reset. All services unregistered.");
+        }
+        
+        /// <summary>
+        /// Clears all registered bindings. Does not clear services.
+        /// </summary>
+        public static void ClearAllBindings()
+        {
+            Log("Resetting Service Locator bindings...");
+            
+            Jumpstarters.Clear();
+            
+            Log("Service Locator bindings reset.");
+        }
+        
+        /// <summary>
+        /// Fully resets the service locator in all aspects.
+        /// </summary>
+        public static void Reset()
+        {
+            ClearAllServices();
+            ClearAllBindings();
+        }
+
+        public static bool TryUnbind<T>()
+        {
+            bool success = Jumpstarters.Remove(typeof(T));
+            if (success) Log($"{typeof(T)} unbound.");
+            return success;
         }
 
         /// <summary>
