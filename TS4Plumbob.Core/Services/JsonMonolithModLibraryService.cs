@@ -26,16 +26,21 @@ public class JsonMonolithModLibraryService : IModLibraryService
     [JsonIgnore]
     public IReadOnlyList<ModEntry> ModList => _modList;
 
-    private ModRig? _activeRig;
+    [JsonInclude]
+    [JsonPropertyName("activeRig")]
+    internal ModRig? _activeRig;
 
     [JsonInclude]
     [JsonPropertyName("rigs")]
     internal List<ModRig> _rigs;
-
     /// <inheritdoc />
-    [JsonInclude]
-    [JsonPropertyName("activeRig")]
-    public ModRig? ActiveRig { get; set; }
+    
+    [JsonIgnore]
+    public ModRig? ActiveRig
+    {
+        get => _activeRig;
+        internal set => _activeRig = value;
+    }
 
     [JsonIgnore]
     /// <inheritdoc />
@@ -183,8 +188,8 @@ public class JsonMonolithModLibraryService : IModLibraryService
     public bool IsValidMod(ModEntry? mod)
     {
         //exists and is present
-        return mod != null && 
-            _distinctModLut.Contains(mod);
+        return mod != null;
+        // _distinctModLut.Contains(mod);
     }
 
     public ModLibraryValidationResult ValidateLibrary()
@@ -201,13 +206,6 @@ public class JsonMonolithModLibraryService : IModLibraryService
         }
 
         return new ModLibraryValidationResult(results);
-    }
-
-    /// <inheritdoc />
-    ModRig IModLibraryService.ActiveRig
-    {
-        get => _activeRig!;
-        set => _activeRig = value;
     }
 
     /// <inheritdoc />

@@ -10,36 +10,58 @@ namespace TS4Plumbob.Core.DataModels;
 [Serializable]
 public class ModRig
 {
-    private HashSet<ModEntry> _modLut;
+    /// <summary>
+    /// hash of the specific mod entries
+    /// </summary>
+    private HashSet<ModEntry> _modEntryLut;
+    /// <summary>
+    /// Hash of the represented mods.
+    /// Used to avoid adding multiple entries for the same mod.
+    /// </summary>
+    private HashSet<Mod> _modLut;
 
     private List<ModEntry> _orderedInstallList;
     public IReadOnlyList<ModEntry> OrderedInstallList => _orderedInstallList;
 
-    public int Count => _modLut.Count;
+    public int Count => _modEntryLut.Count;
 
     #region Constructors/Factories
 
     public ModRig()
     {
         _orderedInstallList = [];
-        _modLut = [];
+        _modEntryLut = [];
     }
 
     public ModRig(ModRigSnapshot snapshot)
     {
-        _orderedInstallList = snapshot.OrderedInstallList
-            .Where(m => m != null)
-            .ToList()!;
-        _modLut = new(_orderedInstallList);
+        _orderedInstallList = snapshot.OrderedInstallList.ToList();
+        _InitModRigFromInstallOrder();
     }
-    
+
     public ModRig(IEnumerable<ModEntry> orderedInstallList)
     {
         _orderedInstallList = orderedInstallList.ToList();
+        _InitModRigFromInstallOrder();
+    }
 
-        AssertNoDuplicateMods();
+    private void _InitModRigFromInstallOrder()
+    {
+        _modEntryLut = new(_orderedInstallList);
         
-        _modLut = new(_orderedInstallList);
+        Mod[] potentialMods = _orderedInstallList
+            .Select(entry => entry.ModConcept)
+            .Where(mod => mod != null)
+            .Distinct()
+            .ToArray()!;
+        
+        if(potentialMods.Length != _modEntryLut.Count)
+            throw new ArgumentException(
+                "Mod count differs from mod entry count - " +
+                "This implies multiple entries for the same mod, " +
+                "which is not allowed.");
+        
+        _modLut = new(potentialMods);
     }
 
     public static ModRig? FromSerializedData(string serializedData)
@@ -51,10 +73,10 @@ public class ModRig
 
     #region Validation Checks
 
-    private void AssertNoDuplicateMods()
+    private void AssertNoDuplicateModEntries()
     {
         if (_orderedInstallList.Distinct().Count() != _orderedInstallList.Count)
-            throw new ArgumentException("OrderedInstallList must have no duplicate elements!");
+            throw new ArgumentException("OrderedInstallList must have no duplicate mod entries elements!");
     }
 
     #endregion
@@ -73,7 +95,7 @@ public class ModRig
     
     public bool Contains(ModEntry mod)
     {
-        return _modLut.Contains(mod);
+        return _modEntryLut.Contains(mod);
     }
 
     public int GetIndexOf(ModEntry mod)
@@ -87,17 +109,16 @@ public class ModRig
     
     private bool Internal_TryAddMod(ModEntry mod)
     {
-        if (!ServiceLocator.Resolve<IModLibraryService>().IsValidMod(mod)) return false;
-
-        return _modLut.Add(mod);
+        var lib = ServiceLocator.Resolve<IModLibraryService>();
+        return lib?.IsValidMod(mod) == true && _modEntryLut.Add(mod);
     }
     
     private bool Internal_TryRemoveMod(ModEntry mod)
     {
-        return _modLut.Remove(mod);
+        return _modEntryLut.Remove(mod);
     }
     
-    public bool TryAddModToEnd(ModEntry mod)
+    public bool TryAddModEntryToEnd(ModEntry mod)
     {
         if(!Internal_TryAddMod(mod)) return false;
         _orderedInstallList.Add(mod);
@@ -120,7 +141,7 @@ public class ModRig
 
     public bool TryMoveModToIndex(ModEntry mod, int index)
     {
-        if (!_modLut.Contains(mod)) return false;
+        if (!_modEntryLut.Contains(mod)) return false;
         _orderedInstallList.Remove(mod);
         _orderedInstallList.Insert(index, mod);
         return true;

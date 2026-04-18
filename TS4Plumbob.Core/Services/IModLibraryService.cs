@@ -13,7 +13,7 @@ public interface IModLibraryService : IService
     bool IsValidMod(ModEntry? mod);
     ModLibraryValidationResult ValidateLibrary();
     
-    ModRig ActiveRig { get; set; }
+    ModRig? ActiveRig { get; }
     
     /// <summary>
     /// The list of all profiles in the library. 

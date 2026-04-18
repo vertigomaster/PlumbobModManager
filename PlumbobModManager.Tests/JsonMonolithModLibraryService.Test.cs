@@ -296,57 +296,160 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 "Deserialized library should contain the same single mod entry, and being a record, should be structurally equal and evaluate as equal.");
                 
         }
-        
-        [Test]
-        public void AddMod_CopyModTest()
+
+        public class ModAddTests : AbstractPlumbobTest
         {
-            string testModDirBaseName = "TestMod";
-            string testModDirPath = Path.Combine(BASE_DIR, testModDirBaseName);
-            
-            //create fake test mod package in PMM_UNIT_TEST_BASE_DIR
-            DirectoryInfo testModDirInfo = Directory.CreateDirectory(testModDirPath);
-            
+            static string testModDirBaseName = "TestMod";
+            static string testModDirPath = Path.Combine(BASE_DIR, testModDirBaseName);
+
             string testPackage1Path = Path.Combine(testModDirPath, "testpackage1.package");
-            byte[] testPackage1Bytes = [1,2,3,4,5,6,7,8,9,10];
-            
+            byte[] testPackage1Bytes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
             string testPackage2Path = Path.Combine(testModDirPath, "testpackage2.package");
-            byte[] testPackage2Bytes = [11,12,13,14,15,16,17,18,19,20];
-            
+            byte[] testPackage2Bytes = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
             string testTs4ScriptPath = Path.Combine(testModDirPath, "test.ts4script");
-            byte[] testTs4ScriptBytes = [21,22,23,24,25,26,27,28,29,30];       
-            
+            byte[] testTs4ScriptBytes = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+
             string testReadmePath = Path.Combine(testModDirPath, "README.txt");
             string testReadmeText = "This is a test mod package";
-            
-            // string expectedModSlug = ModSlug.SanitizeForSlug(testModDirBaseName);
-            
-            //populate it with some files
-            File.WriteAllBytes(testPackage1Path, testPackage1Bytes);
-            File.WriteAllBytes(testPackage2Path, testPackage2Bytes);
-            File.WriteAllBytes(testTs4ScriptPath, testTs4ScriptBytes);
-            File.WriteAllText(testReadmePath, testReadmeText);
-            
-            // string expectedModSlugString = ""
-            
-            //quick check that the test setup is it self correct
-            Assert.That(testModDirInfo.Exists, Is.True, 
-                "Test mod directory should exist");
-            
-            //create the lib
-            var lib = new JsonMonolithModLibraryService();
-            
-            Assert.That(lib, Is.Not.Null, "Library should be created successfully");
-            
-            //add a test mod to it
-            var testModEntry = new ModEntry(testModDirPath, null);
-            lib.TryAddMod(testModEntry);
-            
-            Assert.That(lib.ModList, Has.Count.EqualTo(1), "Library count should reflect the added mod");
-            
-            Debug.WriteLine("Mod 0: " + lib.ModList[0]);
 
-            //need to first add the mod to a rig before it vis
-            IEnumerable<ModEntry> v = lib.GetVisibleMods();
+            DirectoryInfo testModDirInfo;
+
+            [SetUp]
+            public void Setup()
+            {
+                ServiceLocator.Reset();
+                
+                //create fake test mod package in PMM_UNIT_TEST_BASE_DIR
+                testModDirInfo = Directory.CreateDirectory(testModDirPath);
+
+                //populate it with some files
+                File.WriteAllBytes(testPackage1Path, testPackage1Bytes);
+                File.WriteAllBytes(testPackage2Path, testPackage2Bytes);
+                File.WriteAllBytes(testTs4ScriptPath, testTs4ScriptBytes);
+                File.WriteAllText(testReadmePath, testReadmeText);
+            }
+            
+            [TearDown]
+            public void TearDown()
+            {
+                if (Directory.Exists(testModDirPath))
+                {
+                    Directory.Delete(testModDirPath, true);
+                }
+
+                ServiceLocator.Reset();
+            }
+            
+            [Test]
+            public void AddMod_CopyModTest()
+            {
+                //quick check that the test setup is it self correct
+                Assert.That(testModDirInfo.Exists, Is.True,
+                    "Test mod directory should exist");
+
+                //create the lib
+                var lib = new JsonMonolithModLibraryService();
+                ServiceLocator.Register<IModLibraryService>(lib);
+                 
+                Assert.That(lib.ActiveRig, Is.Not.Null,
+                    "ActiveRig should not be null after " +
+                    "library registration.");
+
+                Assert.That(lib, Is.Not.Null, 
+                    "Library should be created successfully");
+
+                //add a test mod to it
+                var testModEntry = new ModEntry(testModDirPath, null);
+                lib.TryAddMod(testModEntry);
+
+                Assert.That(lib.ModList, Has.Count.EqualTo(1), 
+                    "Library count should reflect the added mod");
+
+                Debug.WriteLine("Mod 0: " + lib.ModList[0]);
+
+                //need to first add the mod to a rig before it vis
+                var v = lib.GetVisibleMods().ToArray();
+                
+                Assert.That(v, Is.Not.Null, 
+                    "Visible mods array/enumerable should not " +
+                    "be null after adding a mod");
+                Assert.That(v, Is.Empty, 
+                    "We have not yet added the mod to a rig, " +
+                    "only the library, so it is not visible.");
+            }
+            
+            [Test]
+            public void AddModToRig_CopyModTest()
+            {
+                //quick check that the test setup is it self correct
+                Assert.That(testModDirInfo.Exists, Is.True,
+                    "Test mod directory should exist");
+
+                //create the lib
+                var lib = new JsonMonolithModLibraryService();
+                ServiceLocator.Register<IModLibraryService>(lib);
+                
+                Assert.That(lib.ActiveRig, Is.Not.Null,
+                    "ActiveRig should not be null " +
+                    "after library registration.");
+
+                Assert.That(lib, Is.Not.Null, 
+                    "Library should be created successfully");
+
+                //add a test mod to it
+                var testModEntry = new ModEntry(testModDirPath, null);
+
+                var slug = testModEntry.Slug;
+                Assert.That(slug, Is.Not.Null, 
+                    "Test Check - Mod should have a slug");
+                Assert.That(slug.ToString(), Is.Not.Empty, 
+                    "Test Check - Mod slug should not be empty");
+                
+                var expectedNull = lib.GetModEntry(slug);
+                Assert.That(expectedNull, Is.Null, 
+                    "Test Check - Mod should not be in library" +
+                    " yet during this part of the test.");
+                try
+                {
+                    lib.ActiveRig?.TryAddModEntryToEnd(testModEntry);
+                    Assert.Fail(
+                        "Should not be able to add a mod to a rig " +
+                        "that isn't in the library");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Debug.WriteLine(
+                        $"Got expected exception when attempting to " +
+                        $"add a non-library mod to a rig: {ex}");
+                }
+                catch (Exception ex)
+                {
+                    Assert.Fail(
+                        $"Unexpected exception when attempting to " +
+                        $"add a non-library mod to a rig: {ex}");
+                }
+                
+                lib.TryAddMod(testModEntry);
+                Assert.That(lib.ModList, Has.Count.EqualTo(1), 
+                    "Library count should reflect the added mod");
+                Debug.WriteLine("Mod 0: " + lib.ModList[0]);
+                
+                lib.ActiveRig?.TryAddModEntryToEnd(testModEntry);
+                
+                //need to first add the mod to a rig before it vis
+                var v = lib.GetVisibleMods().ToArray();
+                Assert.That(v, Is.Not.Null, 
+                    "Visible mods array/enumerable should not be " +
+                    "null after adding a mod");
+                Assert.That(v, Is.Not.Empty, 
+                    "We have not yet added the mod to a rig, " +
+                    "only the library, so it is not visible.");
+                Assert.That(v.Length, Is.EqualTo(1), 
+                    "There should be exactly 1 visible mod " +
+                    "in the active rig after adding only one.");
+            }
         }
     }
     
@@ -357,11 +460,24 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
         {
             //create the lib
             var lib = new JsonMonolithModLibraryService();
+            lib.OnRegister(lib.GetType());
+            Assert.That(lib.ActiveRig, Is.Not.Null, 
+                "ActiveRig should not be null after adding a mod");
 
             Assert.That(lib.GetVisibleMods, Is.Not.Null, "Visible mods collection should be initialized");
             Assert.That(lib.GetVisibleMods().Count, Is.EqualTo(0), "Visible mods collection should be empty initially");
 
-            lib.TryAddMod(ModEntry.CreateNewUnique("testpath", null));
+            var newEntry = ModEntry.CreateNewUnique("testpath"); 
+            lib.TryAddMod(newEntry);
+            lib.ActiveRig?.TryAddModEntryToEnd(newEntry);
+            Assert.That(lib.ActiveRig, Is.Not.Null,
+                "ActiveRig should not be null after adding a mod");
+            Assert.That(lib.GetVisibleMods().Count, Is.EqualTo(1), "Visible mods collection should contain exactly 1 mod after adding it");
+            
+            lib.ActiveRig?.TryAddModEntryToEnd(newEntry);
+            Assert.That(lib.ActiveRig, Is.Not.Null,
+                "ActiveRig should not be null after adding a mod");
+            Assert.That(lib.GetVisibleMods().Count, Is.EqualTo(1), "Visible mods collection should still contain exactly 1 mod after adding it again");
         }
     }
 }
