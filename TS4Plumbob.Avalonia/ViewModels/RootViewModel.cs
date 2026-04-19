@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
@@ -87,10 +88,10 @@ public partial class RootViewModel : ViewModelBase
     {
         var visibleMods = Library.GetVisibleMods().Select(
             entry => new ModEntryViewModel {
-                ModName = entry?.HumanReadableIdentifier ?? "Unknown",
-                ModVersion = entry?.ModMetadata?.Version ?? "0.0.0",
-                ModAuthor = entry?.ModMetadata?.Author?.Name ?? "Unknown",
-                // TODO: Add description to ModMetadata if needed
+                ModName = entry.HumanReadableIdentifier,
+                ModVersion = entry.ModMetadata.Version.ToString(),
+                ModAuthor = entry.ModMetadata.Author.Name,
+                // TODO: Add description to ModMetadata if needed - via string table?
                 ModDescription = "", 
                 IsEnabled = true // TODO: Logic for enabled state
         });
@@ -174,10 +175,28 @@ public partial class RootViewModel : ViewModelBase
         if (result is null) return;
         
         //TODO: popup new window asking about mod setup
+        //that will be used to determine what mod it is an entry of
+        //for now, just make every new entry its own mod
+        var testMod = new Mod(new ModMetadata(
+            result.Name, 
+            new Version(1,0), 
+            AuthorProfile.Unknown, 
+            DateTime.Now));
+        var thisEntry = testMod.AddDefaultEntry();
+        string pathToCopyTo = thisEntry.AbsPath;
 
-        if (Library.TryAddMod(ModEntry.CreateNewUnique(result.Path.LocalPath, null)))
+        if (Library.TryAddMod(testMod))
         {
-            Library.SaveToFile();
+            Console.WriteLine(
+                $"Copying URI directory: '{result.Path.AbsolutePath}' " +
+                $"(local path {result.Path.LocalPath}) " +
+                $"into mod entry '{thisEntry.HumanReadableIdentifier}' " +
+                $"@ '{thisEntry.AbsPath}'");
+            
+            await Library.CopyFolderIntoModEntryAsync(
+                result.Path.AbsolutePath, thisEntry);
+            
+            Library.SaveToFileAsync();
         }
         
         OnVisibleModsRefreshed();
