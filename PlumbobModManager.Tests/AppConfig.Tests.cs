@@ -128,44 +128,19 @@ public class ModEntryTests
         Assert.That(testModDirInfo.GetFiles().Length, Is.EqualTo(4), 
             "Test mod directory should contain exactly four files");
 
-        var testModEntry = new ModEntry(
-            testModDirPath, 
+        var mod = new Mod(
             new ModMetadata(
-                TEST_MOD_NAME, 
-                "1.0.0", 
+                TEST_MOD_NAME,
+                new Version("1.0.0"),
                 new AuthorProfile("SomeGuy", ["www.someguy.com"])
-        ));
+            ));
+        
+        var testModEntry = mod.AddNewEntry(new Version(1,0));
         
         Assert.That(testModEntry, Is.Not.Null, 
             "ModEntry should not be null");
-        Assert.That(testModEntry.RootPath, Is.EqualTo(testModDirPath), 
-            "RootPath should match TestModPath");
         Assert.That(testModEntry.ExistsOnDisk, Is.True, 
             "ModEntry should exist on disk");       
         
-    }
-    
-    [Test]
-    public void ModEntry_CreationTest()
-    {
-        var testModEntry = new ModEntry(
-            rootPath: TestModPath, 
-            modMetadata: null);
-        
-        Assert.That(testModEntry, Is.Not.Null, "ModEntry should not be null");
-        Assert.That(testModEntry.RootPath, Is.EqualTo(TestModPath), 
-            "RootPath should match TestModPath");
-    }
-
-    [Test]
-    public void ModEntry_CreationTest2()
-    {
-        var testModEntry = new ModEntry(
-            rootPath: TestModPath,
-            modMetadata: null);
-
-        // Assert.That(testModEntry.ExistsOnDisk(), Is.True, "ModEntry should exist on disk");
-        
-        Assert.That(testModEntry, Is.Not.Null, "ModEntry should not be null");
     }
 }
