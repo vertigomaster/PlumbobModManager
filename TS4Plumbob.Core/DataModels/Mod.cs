@@ -34,11 +34,11 @@ public class Mod
     /// <summary>
     /// Represents the template that will be used as the basis for new entries.
     /// </summary>
-    public ModMetadata MetadataTemplate { get; set; }
+    public ModMetadata MetadataTemplate { get; init; }
     
-    public ModSlug Slug { get; set; }
+    public ModSlug Slug { get; init; }
     
-    public HashSet<ModEntry> Entries { get; set; } = [];
+    public HashSet<ModEntry> Entries { get; init; } = [];
     
     #endregion
     #region Service Accessors
@@ -150,7 +150,11 @@ public class Mod
     {
         if(obj is not Mod other) return false;
         
-        return MetadataTemplate.Equals(other.MetadataTemplate) && Slug.Equals(other.Slug);
+        if (!MetadataTemplate.Equals(other.MetadataTemplate)) return false;
+        if (!Slug.Equals(other.Slug)) return false;
+        if (Entries.Count != other.Entries.Count) return false;
+        
+        return Entries.SetEquals(other.Entries);
     }
 
     #region Equality members
@@ -158,7 +162,14 @@ public class Mod
     /// <inheritdoc />
     public override int GetHashCode()
     {
-        return HashCode.Combine(MetadataTemplate, Slug);
+        var hash = new HashCode();
+        hash.Add(MetadataTemplate);
+        hash.Add(Slug);
+        foreach (var entry in Entries)
+        {
+            hash.Add(entry);
+        }
+        return hash.ToHashCode();
     }
 
     #endregion
