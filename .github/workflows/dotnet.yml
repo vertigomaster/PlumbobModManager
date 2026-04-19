@@ -9,7 +9,11 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -18,8 +22,8 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore PlumbobModManager_crossplat.Filter.slnf 
     - name: Build
-      run: dotnet build PlumbobModManager.Tests/PlumbobModManager.Tests.csproj --no-restore
+      run: dotnet build PlumbobModManager_crossplat.Filter.slnf --no-restore
     - name: Test
       run: dotnet test PlumbobModManager.Tests/PlumbobModManager.Tests.csproj --no-build --verbosity normal

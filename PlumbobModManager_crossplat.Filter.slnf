@@ -1,0 +1,14 @@
+﻿{
+  "solution": {
+    "path": "PlumbobModManager.sln",
+    "projects": [
+      "IDEK.Tools.Shocktrooper\\IDEK.Tools.Shocktrooper.csproj",
+      "IDEK.Tools.StateExMachina\\IDEK.Tools.StateExMachina.csproj",
+      "IDEK.Tools.Trove\\IDEK.Tools.Trove.csproj",
+      "PlumbobModManager.Tests\\PlumbobModManager.Tests.csproj",
+      "TS4Plumbob.Avalonia\\TS4Plumbob.Avalonia.csproj",
+      "TS4Plumbob.CLI\\TS4Plumbob.CLI.csproj",
+      "TS4Plumbob.Core\\TS4Plumbob.Core.csproj"
+    ]
+  }
+}

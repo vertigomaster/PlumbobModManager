@@ -30,6 +30,7 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8aedbf0c_002D7f42_002D4319_002D9f85_002Dc96257974f9a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Solution /&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
+	<s:Boolean x:Key="/Default/UnloadedProject/UnloadedProjects/=80366be5_002De1e0_002D4687_002Da40c_002D5ad053c4888a_0023TS4Plumbob_002EWinForm/@EntryIndexedValue">True</s:Boolean>
 	
 	
 	
