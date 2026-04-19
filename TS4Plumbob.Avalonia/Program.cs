@@ -1,7 +1,9 @@
 ﻿using Avalonia;
 using System;
 using System.Threading.Tasks;
+using IDEK.Tools.ShocktroopUtils.Services;
 using TS4Plumbob.Core;
+using TS4Plumbob.Core.DataModels;
 
 namespace TS4Plumbob.Avalonia;
 
@@ -16,6 +18,12 @@ sealed class Program
         //Try boot up the kernel beforehand
         int startCode = await PlumbobKernel.StartInstance(args);
         if (startCode != 0) return;
+
+        //one big Bandaid so that I don't have to add a bunch of weird little
+        //async bandaids all over the place for Library property access
+        //forces the service locator to resolve this core async service
+        await ServiceLocator.ResolveAsync<IModLibraryService>();
+        //now the service should be resolved and present fpr synchronous access
         
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         

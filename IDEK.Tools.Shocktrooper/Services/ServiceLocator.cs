@@ -43,6 +43,7 @@
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
+using IDEK.Tools.Logging;
 
 namespace IDEK.Tools.ShocktroopUtils.Services
 {
@@ -79,6 +80,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// dict of explicitly specified procedures for jumpstarting given services.
         /// </summary>
         private static readonly Dictionary<Type, Func<object>> Jumpstarters = new();
+        private static readonly Dictionary<Type, Func<Task<object>>> AsyncJumpstarters = new();
         
         /// <summary>
         /// Binds the given provider to the output type
@@ -101,6 +103,13 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         {
             Jumpstarters[typeof(TService)] = () => new TProvider().Create();
         }
+        
+        public static void BindAsyncJumpstarter<TService, TProvider>() where TProvider : IAsyncServiceProvider<TService>, new()
+        {
+            AsyncJumpstarters[typeof(TService)] = async () => 
+                await new TProvider().CreateAsync() ?? throw new InvalidOperationException(
+                    "Bound Async service provider returned null instead of a service.");
+        }
 
         /// <summary>
         /// Binds the
@@ -119,12 +128,19 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// overkill for engines like Unity, where service components can be
         /// pre-spawned in the scene, but quite useful in other .NET environments
         /// </remarks>
-        public static void BindJumpstarter<TService>(Func<object> jumpstarter)
+        public static void BindProvider<TService>(Func<object> jumpstarter)
         {
             Jumpstarters[typeof(TService)] = jumpstarter;
-            Debug.WriteLine($"{typeof(TService)} bound.");
+            Log($"{typeof(TService)} bound.");
         }
         
+        //TODO:
+        public static void BindAsyncProvider<TService>(Func<Task<object>> jumpstarter)
+        {
+            AsyncJumpstarters[typeof(TService)] = jumpstarter;
+            Log($"{typeof(TService)} bound.");
+        }
+
         /// <summary>
         /// You need to register the service before it can be Resolved or accessed. You can only register one instance of one type.
         /// </summary>
@@ -152,7 +168,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
                 return registeredService;
             }
 
-            if (!serviceInstance.GetType().IsAssignableFrom(type))
+            if (!type.IsInstanceOfType(serviceInstance))
             {
                 LogError($"Registration Failed; Object {serviceInstance} does not derive from the service type!");
                 return null;
@@ -256,14 +272,15 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// either rework your code so that it will be available,
         /// or, if you're in a pinch, call either <see cref="IsRegistered{T}"/> or <see cref="TryJumpStart{T}"/>.
         /// </remarks>
-        public static T Resolve<T>(bool jumpStartIfNotFound = true)
+        public static T? Resolve<T>(bool jumpStartIfNotFound = true)
         {
             // return (T)Services[typeof(T)];
             bool success = Services.TryGetValue(typeof(T), out object instance);
             if(success) return (T)instance;
 
             if (!jumpStartIfNotFound) return default;
-            // TryAutoBindJumpstarter<T>();
+            
+            //TODO: have unity projects implement a jumpstarter/provider for UnityEngine.Component types
 #if UNITY_5_3_OR_NEWER
             if (typeof(UnityEngine.Component).IsAssignableFrom(typeof(T)))
             {
@@ -278,33 +295,66 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             }
 #endif
 
-            if (Jumpstarters.TryGetValue(typeof(T), out Func<object> jumpstarter))
+            if (_Jumpstart(out T? resolve))
             {
-                Log($"Jumpstarting {typeof(T)}...");
-                T output = (T)jumpstarter?.Invoke();
-                Log($"{typeof(T)} now resolvable.");
-                
+                return resolve;
+            }
 
-                Register<T>(output);
-                return output;
+            //we leave til the end bc the earlier processes are more likely to
+            //succeed, saving us the additional operations. 
+            if(AsyncJumpstarters.ContainsKey(typeof(T)))
+            {
+                throw new InvalidOperationException(
+                    $"Async services must be resolved with {nameof(ResolveAsync)}(), not {nameof(Resolve)}(). " +
+                    $"The type {typeof(T).FullName} is bound to an {nameof(IAsyncServiceProvider<T>)}/async jumpstarter. " +
+                    $"\nUse {nameof(ResolveAsync)}() when possible, as it can handle both asynchronous " +
+                    $"and synchronous bindings.");
             }
 
             return default;
         }
 
-        public static bool TryResolve<T>(out T serviceInstance, bool jumpStartIfNotFound = true)
+        private static readonly SemaphoreSlim _resolveLock = new(
+            initialCount: 1, maxCount: 1);
+        
+        public static async Task<T?> ResolveAsync<T>(bool jumpStartIfNotFound = true)
+        {
+            if (Services.TryGetValue(typeof(T), out object instance)) 
+                return (T)(instance ?? 
+                    throw new InternalServiceLocatorException(typeof(T),
+                        $"Null Service instance returned from internal " +
+                        $"service dictionary for type {typeof(T).FullName}")); 
+
+            if (!jumpStartIfNotFound) return default;
+            
+            await _resolveLock.WaitAsync();
+
+            try
+            {
+                //fallback to regular resolve if no async jumpstarter is bound
+                return (await _JumpstartAsync<T>()) ?? 
+                    (_Jumpstart(out T? resolve) ? resolve : default);
+            } 
+            finally
+            {
+                _resolveLock.Release();
+            }
+        }
+
+        public static bool TryResolve<T>(out T? serviceInstance, bool jumpStartIfNotFound = true)
         {
             bool success = Services.TryGetValue(typeof(T), out object instance);
-
-            if (success)
-            {
-                serviceInstance = (T)instance;
+            if (success) {
+                serviceInstance = (T)(instance ??
+                    throw new InternalServiceLocatorException(typeof(T),
+                        $"Null Service instance returned from internal " +
+                        $"service dictionary for type {typeof(T).FullName}")); 
                 return true;
             }
 
             if (!jumpStartIfNotFound)
             {
-                serviceInstance = default(T);
+                serviceInstance = default;
                 return false;
             }
             
@@ -323,45 +373,56 @@ namespace IDEK.Tools.ShocktroopUtils.Services
                 return true;
             }
 #endif
-
-            if (Jumpstarters.TryGetValue(typeof(T), out Func<object> jumpstarter))
-            {
-                Log($"Jumpstarting {typeof(T)}...");
-                T output = (T)jumpstarter?.Invoke();
-                Log($"{typeof(T)} now resolvable.");
-
-                Register<T>(output);
-                serviceInstance = output;
-                return true;
-            }
-            
-            serviceInstance = default(T);
-            return false;
+            return _Jumpstart(out serviceInstance);
         }
-        
-        //this is becoming very overkill right now
-        // private static bool TryAutoBindJumpstarter<T>()
-        // {
-        //     if (!typeof(T).GetCustomAttributes(typeof(AutoJumpstartAttribute), true).Any())
-        //         return false;
-        //     
-        //     //it has the attribute, lets attempt the jumpstart by locating its service provider...how?
-        // }
 
         /// <summary>
-        /// Clears all registered services. BUT does not perform any dispose or cleanup on the services.
+        /// Clears all registered services. Does not clear bindings.
         /// </summary>
-        public static void Reset()
+        public static void ClearAllServices()
         {
             Log("Resetting Service Locator...");
             
             foreach (KeyValuePair<Type, object> service in Services)
             {
                 Unregister(service.Key);
+                
+                if(service.Value is IDisposable disposable)
+                    disposable.Dispose();
             }
+            
             //just for good measure
             Services.Clear();
             Log("Service Locator Reset. All services unregistered.");
+        }
+
+        /// <summary>
+        /// Clears all registered bindings. Does not clear services.
+        /// </summary>
+        public static void ClearAllBindings()
+        {
+            Log("Resetting Service Locator bindings...");
+            
+            Jumpstarters.Clear();
+            AsyncJumpstarters.Clear();
+            
+            Log("Service Locator bindings reset.");
+        }
+
+        /// <summary>
+        /// Fully resets the service locator in all aspects.
+        /// </summary>
+        public static void Reset()
+        {
+            ClearAllServices();
+            ClearAllBindings();
+        }
+
+        public static bool TryUnbind<T>()
+        {
+            bool success = Jumpstarters.Remove(typeof(T)) || AsyncJumpstarters.Remove(typeof(T));
+            if (success) Log($"{typeof(T)} unbound.");
+            return success;
         }
 
         /// <summary>
@@ -379,6 +440,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
+        [Obsolete("Jumpstarting is now automatic. Use Resolve() or TryResolve() instead.")]
         public static T ResolveJumpStart<T>() where T : new()
         {
             if(TryResolve(out T activeService)) return activeService;
@@ -411,7 +473,8 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             Register<T>(newService);
             return newService;
         }
-        
+
+
         //TODO: use an actual Logger class
 
         private static void Log(string msg)
@@ -422,7 +485,8 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 #if UNITY_5_3_OR_NEWER
             UnityEngine.Debug.Log(formattedMsg);
 #else
-            Console.WriteLine(formattedMsg);
+            ConsoleLog.Log(formattedMsg);
+            // Console.WriteLine(formattedMsg);
 #endif
         }
 
@@ -433,8 +497,42 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 #if UNITY_5_3_OR_NEWER
             UnityEngine.Debug.LogError(formattedMsg);
 #else
-            Console.WriteLine(formattedMsg);
+            ConsoleLog.LogError(formattedMsg);
+            // Console.WriteLine(formattedMsg);
 #endif
+        }
+
+        private static bool _Jumpstart<T>(out T? resolve)
+        {
+            if (Jumpstarters.TryGetValue(typeof(T), out Func<object> jumpstarter))
+            {
+                Log($"Jumpstarting {typeof(T)}...");
+                T output = (T)jumpstarter.Invoke();
+                Log($"{typeof(T)} now resolvable.");
+                
+
+                Register<T>(output);
+                resolve = output;
+                return true;
+            }
+
+            resolve = default;
+            return false;
+        }
+
+        private static async Task<T?> _JumpstartAsync<T>()
+        {
+            if (AsyncJumpstarters.TryGetValue(typeof(T), out Func<Task<object>> jumpstarter))
+            {
+                Log($"Jumpstarting {typeof(T)}...");
+                T output = (T)await jumpstarter.Invoke();
+                Log($"{typeof(T)} now resolvable.");
+                
+                Register<T>(output);
+                return output;
+            }
+
+            return default;
         }
     }
 }

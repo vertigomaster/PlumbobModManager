@@ -11,11 +11,12 @@
             HorizontalAlignment="Stretch"
             HorizontalContentAlignment="Center"
             Command="{ Binding UpdateModLibraryFolderCommand }"
+            IsEnabled="{Binding !UpdateModLibraryFolderCommand.IsRunning}"
             Content="Select Mod Library Folder"/>
 
         <TextBlock
             Text="{
-                Binding ModLibraryFolder.Path.LocalPath,
+                Binding ModLibraryFolderString,
                 FallbackValue='No folder selected'
             }"
             HorizontalAlignment="Center" Margin="5" />

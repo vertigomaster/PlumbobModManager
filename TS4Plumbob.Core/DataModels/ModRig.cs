@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using IDEK.Tools.ShocktroopUtils.Services;
-using TS4Plumbob.Core.DataModels.IdTypes;
 
 namespace TS4Plumbob.Core.DataModels;
 
@@ -11,100 +10,78 @@ namespace TS4Plumbob.Core.DataModels;
 [Serializable]
 public class ModRig
 {
-    // [NonSerialized]
-    // private HashSet<ModEntry> _modLut;
-    [NonSerialized]
-    private HashSet<ModEntryId> _modLut;
+    /// <summary>
+    /// hash of the specific mod entries
+    /// </summary>
+    private HashSet<ModEntry> _modEntryLut;
+    /// <summary>
+    /// Hash of the represented mods.
+    /// Used to avoid adding multiple entries for the same mod.
+    /// </summary>
+    private HashSet<Mod> _modLut;
 
-    // [JsonInclude]
-    // [JsonPropertyName("orderedInstallList")]
-    private List<ModEntryId> _orderedInstallList;
-    public IReadOnlyList<ModEntryId> OrderedInstallList => _orderedInstallList;
-
-    public int Count => _modLut.Count;
+    private List<ModEntry> _orderedInstallList;
+    
+    public IReadOnlyList<ModEntry> OrderedInstallList => _orderedInstallList;
+    public int Count => _modEntryLut.Count;
 
     #region Constructors/Factories
 
     public ModRig()
     {
         _orderedInstallList = [];
+        _modEntryLut = [];
         _modLut = [];
-        // _modGuidLut = [];
     }
 
     public ModRig(ModRigSnapshot snapshot)
     {
-        //guid lookup from the pool of mods
         _orderedInstallList = snapshot.OrderedInstallList.ToList();
-        _modLut = new(_orderedInstallList);
-        // _modGuidLut = new HashSet<Guid>(_modLut.Select(mod => mod.Id));
+        _InitModRigFromInstallOrder();
     }
-    
-    public ModRig(IEnumerable<ModEntryId> orderedInstallList)
+
+    public ModRig(IEnumerable<ModEntry> orderedInstallList)
     {
         _orderedInstallList = orderedInstallList.ToList();
-
-        AssertNoDuplicateMods();
-        
-        InitializeFromSerializedData();
+        _InitModRigFromInstallOrder();
     }
-    
-    // public RuntimeModRigManifest(IEnumerable<Guid> orderedInstallList, HashSet<Guid> modLut)
-    // {
-    //     _orderedInstallList = orderedInstallList.ToList();
-    //     
-    //     AssertListAndHashModCountsMatch(modLut);
-    //     AssertListAndHashModsMatch(modLut);
-    //     AssertNoDuplicateMods();
-    //     
-    //     _modLut = modLut;
-    //     _modGuidLut = new HashSet<Guid>(_modLut.Select(mod => mod.Id));
-    // }
+
+    private void _InitModRigFromInstallOrder()
+    {
+        _modEntryLut = new(_orderedInstallList);
+        
+        Mod[] potentialMods = _orderedInstallList
+            .Select(entry => entry.ModConcept)
+            .Distinct()
+            .ToArray()!;
+        
+        if(potentialMods.Length != _modEntryLut.Count)
+            throw new ArgumentException(
+                "Mod count differs from mod entry count - " +
+                "This implies multiple entries for the same mod, " +
+                "which is not allowed.");
+        
+        _modLut = new(potentialMods);
+    }
 
     public static ModRig? FromSerializedData(string serializedData)
     {
-        ModRig? manifest = JsonSerializer.Deserialize<ModRig>(serializedData);
-        manifest?.InitializeFromSerializedData();
-        return manifest;
-    }
-
-    public void InitializeFromSerializedData()
-    {
-        // Repopulate the runtime hashsets from the list on deserialization
-        _modLut = new(_orderedInstallList);
-
-        foreach (var modId in _orderedInstallList)
-        {
-            var mod = ServiceLocator.Resolve<IModLibraryService>().GetModEntry(modId);
-            if (mod == null)
-            {
-                //todo: some notification that this rig refers to a missing mod
-            }
-        }
-        
-        // _modGuidLut = new HashSet<Guid>(_modLut.Select(mod => mod.Id));
+        return JsonSerializer.Deserialize<ModRig>(serializedData, AppConfig.LibrarySerializerOptions);
     }
 
     #endregion
 
+    public void InitializeAfterDeserialization()
+    {
+        _InitModRigFromInstallOrder();
+    }
+
     #region Validation Checks
 
-    // private void AssertListAndHashModsMatch(HashSet<ModEntry> modLut)
-    // {
-    //     if (_orderedInstallList.Any(modId => !modLut.Contains(modId)))
-    //         throw new ArgumentException("ModLut and OrderedInstallList must have the same elements!");
-    // }
-    //
-    // private void AssertListAndHashModCountsMatch(HashSet<ModEntry> modLut)
-    // {
-    //     if (modLut.Count != _orderedInstallList.Count) 
-    //         throw new ArgumentException("ModLut and OrderedInstallList must have the same number of elements!");
-    // }
-
-    private void AssertNoDuplicateMods()
+    private void AssertNoDuplicateModEntries()
     {
         if (_orderedInstallList.Distinct().Count() != _orderedInstallList.Count)
-            throw new ArgumentException("OrderedInstallList must have no duplicate elements!");
+            throw new ArgumentException("OrderedInstallList must have no duplicate mod entries elements!");
     }
 
     #endregion
@@ -113,112 +90,77 @@ public class ModRig
 
     public IEnumerable<ModEntry> GetAllMods()
     {
-        return _modLut.Select(ServiceLocator.Resolve<IModLibraryService>().GetModEntry);
+        return _orderedInstallList;
     }
-    
-    public ModEntry? GetMod(Guid modId)
-    {
-        if(!Contains(modId)) return null;
-        var mod = ServiceLocator.Resolve<IModLibraryService>().GetModEntry(modId);
-        return mod;
-    }
-    
-    public bool Contains(Guid modId) => 
-        _modLut.Contains(modId);
     
     public bool Contains(ModEntry mod)
     {
-        // var mod = ServiceLocator.Resolve<ModLibraryService>().GetMod(modId);
-        return _modLut.Contains(mod.Id);
+        return _modEntryLut.Contains(mod);
     }
 
-    public int GetIndexOf(Guid modId)
+    public int GetIndexOf(ModEntry mod)
     {
-        if (!_modLut.Contains(modId)) return -1;
-
-        // for (int i = 0; i < _orderedInstallList.Count; i++)
-        //     if (_orderedInstallList[i].Id == modId) return i;
-        
-        return _orderedInstallList.IndexOf(modId);
+        return _orderedInstallList.IndexOf(mod);
     }
     
     #endregion
 
     #region Mod Manipulation
     
-    public bool TryAddModToEnd(Guid modId)
+    public bool TryAddModEntryToEnd(ModEntry mod)
     {
-        if(!Internal_TryAddMod(modId)) return false;
-        _orderedInstallList.Add(modId);
-        return true;
-    }
-
-    private bool Internal_TryAddMod(ModEntry mod)
-    {
-        //mods must first be added to the library. thats a litle annoying but makes this stuff a lot easier to maintain.
-        if (!ServiceLocator.Resolve<IModLibraryService>().IsValidMod(mod)) return false;
-
-        return _modLut.Add(mod.Id);
-    }
-    
-    private bool Internal_TryRemoveMod(ModEntry mod)
-    {
-        //mods must first be added to the library. thats a litle annoying but makes this stuff a lot easier to maintain.
-        // if (!ServiceLocator.Resolve<ModLibraryService>().IsValidMod(mod)) return false;
-
-        return _modLut.Remove(mod.Id);
-    }
-    
-    private bool Internal_TryRemoveMod(Guid modId)
-    {
-        //mods must first be added to the library. thats a litle annoying but makes this stuff a lot easier to maintain.
-        // if (!ServiceLocator.Resolve<ModLibraryService>().IsValidMod(mod)) return false;
-
-        return _modLut.Remove(modId);
-    }
-    
-    private bool Internal_TryAddMod(Guid modId)
-    {
-        //mods must first be added to the library. thats a litle annoying but makes this stuff a lot easier to maintain.
-        if (ServiceLocator.Resolve<IModLibraryService>().GetModEntry(modId) == null) return false;
-
-        return _modLut.Add(modId);
-    }
-    
-    public bool TryAddModToEnd(ModEntry mod)
-    {
-        if(!Internal_TryAddMod(mod)) return false;
-        _orderedInstallList.Add(mod.Id);
+        if(!_TryAddMod(mod)) return false;
+        _orderedInstallList.Add(mod);
         return true;
     }
 
     public bool TryAddModToStart(ModEntry mod)
     {
-        if (!Internal_TryAddMod(mod)) return false;
-        _orderedInstallList.Insert(0, mod.Id);
+        if (!_TryAddMod(mod)) return false;
+        _orderedInstallList.Insert(0, mod);
         return true;
     }
 
     public bool TryAddModToIndex(ModEntry mod, int index)
     {
-        if (!Internal_TryAddMod(mod)) return false;
-        _orderedInstallList.Insert(index, mod.Id);
+        if (!_TryAddMod(mod)) return false;
+        _orderedInstallList.Insert(index, mod);
         return true;
     }
 
     public bool TryMoveModToIndex(ModEntry mod, int index)
     {
-        if (!Internal_TryAddMod(mod)) return false;
-        _orderedInstallList.Remove(mod.Id);
-        _orderedInstallList.Insert(index, mod.Id);
+        if (!_modEntryLut.Contains(mod)) return false;
+        _orderedInstallList.Remove(mod);
+        _orderedInstallList.Insert(index, mod);
         return true;
     }
 
     public bool TryRemoveMod(ModEntry mod)
     {
-        if (!Internal_TryRemoveMod(mod)) return false;
-        _orderedInstallList.Remove(mod.Id);
+        if (!_TryRemoveMod(mod)) return false;
+        _orderedInstallList.Remove(mod);
         return true;
+    }
+
+
+    private bool _TryAddMod(ModEntry modEntry)
+    {
+        if (!ServiceLocator.TryResolve(out IModLibraryService? lib))
+            throw new InvalidOperationException("ModLibraryService not registered!");
+
+        //Only add if the entry's mod is valid and if the entry isn't already in the rig
+        return lib!.IsValidMod(modEntry.ModConcept) && _modEntryLut.Add(modEntry) && _modLut.Add(modEntry.ModConcept);
+
+        //TODO: fire events or utilize an observer pattern?
+    }
+
+    private bool _TryRemoveMod(ModEntry mod)
+    {
+        //no extra checks since it's being removed anyway
+        return _modEntryLut.Remove(mod) && _modLut.Remove(mod.ModConcept);
+
+        //TODO: fire events or utilize an observer pattern?
     }
 
     #endregion

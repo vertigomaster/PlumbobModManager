@@ -1,9 +1,11 @@
-﻿using System.Diagnostics;
-using IDEK.Tools.Logging;
+﻿using System.Runtime.CompilerServices;
 using IDEK.Tools.ShocktroopUtils.Services;
 using IDEK.Tools.Trove;
 using IDEK.Tools.Utilities;
+using Plumbob.Core.Utils;
 using TS4Plumbob.Core.DataModels;
+
+[assembly: InternalsVisibleTo("PlumbobModManager.Tests")]
 
 namespace TS4Plumbob.Core;
 
@@ -31,9 +33,9 @@ public partial class PlumbobKernel()
 
     public static async Task<int> StartInstance(string[] args)
     {
-        ConsoleLog.Log("Attempting to start PMM Kernel...");
+        PlumbobMsg.WriteDebugInfo("Attempting to start PMM Kernel Instance...");
         if (Instance.IsRunning) return 0;
-        ConsoleLog.Log("Starting PMM Kernel...");
+        PlumbobMsg.WriteDebugInfo("Starting PMM Kernel Instance...");
 
         Instance = new PlumbobKernel();
         return await Instance.Start(args);
@@ -46,16 +48,16 @@ public partial class PlumbobKernel()
     /// <returns></returns>
     public async Task<int> Start(string[] args)
     {
-        ConsoleLog.Log("Attempting to start PMM Kernel...");
+        PlumbobMsg.WriteDebugInfo("Checking if PMM Kernel already running...");
         if (IsRunning) return 0;
-        ConsoleLog.Log("Starting PMM Kernel...");
+        PlumbobMsg.WriteDebugInfo("Kernel not already running, Starting PMM Kernel...");
         
         IsRunning = true;
         
         coreLifetimeTrove = new Trove("Plumbob Core Kernel");
         
         //here for now, may need to change or move to the application projects that use this library.
-        BindCoreServices();
+        _BindCoreServices();
         BindExternalServicesEvent?.Invoke();
         
         return 0;
@@ -63,11 +65,11 @@ public partial class PlumbobKernel()
 
     public async Task<int> Shutdown()
     {
-        ConsoleLog.Log("Attempting shutdown PMM Kernel...");
+        PlumbobMsg.WriteDebugInfo("Attempting shutdown PMM Kernel...");
         if (!IsRunning) return 0;
-        ConsoleLog.Log("Shutting down PMM Kernel...");
+        PlumbobMsg.WriteDebugInfo("Shutting down PMM Kernel...");
         
-        DisposeCoreServices();
+        _DisposeCoreServices();
         
         IsRunning = false;
         return 0;
@@ -76,39 +78,43 @@ public partial class PlumbobKernel()
     /// <summary>
     /// bind services (might do a partial if this gets really big)
     /// </summary>
-    private void BindCoreServices()
+    private void _BindCoreServices()
     {
-        ConsoleLog.Log("Binding Core Services...");
-        ServiceLocator.BindJumpstarter<AppConfig>(() => {
+        PlumbobMsg.WriteDebugInfo("Binding Core Services...");
+        ServiceLocator.BindProvider<AppConfig>(() => {
             AppConfig newService = AppConfig.LoadFromDisk() ?? new AppConfig();
 
             coreLifetimeTrove.AddCleanup(nameof(AppConfig), () => {
+                PlumbobMsg.WriteDebugInfo("Cleaning up AppConfig Service...");
                 ServiceLocator.TryUnregister<AppConfig>(newService);
                 newService.SaveToDisk();
+                PlumbobMsg.WriteDebugInfo("AppConfig Service Cleanup Complete.");
             });
 
             return newService;
         });
         
-        ServiceLocator.BindJumpstarter<IModLibraryService>(() => {
-            var appConfig = ServiceLocator.Resolve<AppConfig>();
-            string location = appConfig.UserSettings.ModLibraryPath;
-            
-            var newService = JsonMonolithModLibraryService.LoadFromFile(location) ?? 
+        ServiceLocator.BindAsyncProvider<IModLibraryService>(async () => {
+            var newService = await JsonMonolithModLibraryService.LoadFromFileAsync() ?? 
                 new JsonMonolithModLibraryService();
 
-            coreLifetimeTrove.AddCleanup(nameof(JsonMonolithModLibraryService), () => {
-                ServiceLocator.TryUnregister<IModLibraryService>(newService);
-                newService.SaveToFile(location);
+            coreLifetimeTrove.AddAsyncCleanup(
+                nameof(JsonMonolithModLibraryService), 
+                async () => {
+                    PlumbobMsg.WriteDebugInfo("Cleaning up ModLibraryService...");
+                    ServiceLocator.TryUnregister<IModLibraryService>(newService);
+                    await newService.SaveToFileAsync();
+                    PlumbobMsg.WriteDebugInfo("ModLibraryService Cleanup Complete.");
             });
 
             return newService;
         });
     }
 
-    private void DisposeCoreServices()
+    private void _DisposeCoreServices()
     {
-        ConsoleLog.Log("Disposing Core Services...");
+        PlumbobMsg.WriteDebugInfo("Disposing Core Services...");
         coreLifetimeTrove.Dispose(); //well that was easy
+        PlumbobMsg.WriteDebugInfo("Core Services Disposed.");
     }
 }

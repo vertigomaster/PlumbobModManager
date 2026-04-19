@@ -1,7 +1,16 @@
 ﻿namespace TS4Plumbob.Core.DataModels;
 
-public record ModLibraryValidationResult(ModValidationResult[] Results)
+public record ModLibraryValidationResult
 {
+    public ModValidationResult[] Results { get; init; }
+
+    public ModLibraryValidationResult() { }
+
+    public ModLibraryValidationResult(ModValidationResult[] results)
+    {
+        Results = results;
+    }
+
     //it's immutable, so we can cache the results! We don't pre-cache though,
     //since not every record will use all the queries.
     private bool? _hasErrors = null;
