@@ -3,13 +3,17 @@
 namespace TS4Plumbob.Core.DataModels;
 
 public record ModMetadata(
-    string Name, 
-    string Version, 
+    string Name,
+    Version Version,
     AuthorProfile Author,
-    
-    // //not sure if we actually need to specify 
-    // [property: JsonPropertyName("links")] 
-    // Dictionary<string,string> Links, 
-    
     DateTime? LastUpdated = null
-);
+)
+{
+    public string VariantString { get; set; } = "";
+    public static ModMetadata Unknown => new(
+        "[Unknown]",
+        Version.Parse("0.0.0"),
+        AuthorProfile.Unknown,
+        DateTime.Now
+    );
+}

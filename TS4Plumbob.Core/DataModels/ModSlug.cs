@@ -12,11 +12,15 @@ public record ModSlug
     /// </summary>
     public int Offset { get; init; }
 
+    public static ModSlug Unknown => new("unknown", 0);
+
     public ModSlug()
     {
         MainId = string.Empty;
         Offset = 0;
     }
+    
+    public ModSlug(string mainId) : this(mainId, 0) { }
     
     public ModSlug(string mainId, int offset)
     {
@@ -26,7 +30,7 @@ public record ModSlug
 
     public ModSlug BumpCopy()
     {
-        return new ModSlug(MainId, Offset + 1);
+        return this with { Offset = Offset + 1 };
     }
 
     /// <summary>
@@ -42,7 +46,7 @@ public record ModSlug
             .Replace(str, @"[.\-\s\t\r\n\u00A0\u2000-\u200B\u202F\u205F\u3000]", "_").ToLowerInvariant();
     }
 
-    public static implicit operator string(ModSlug modSlug) => modSlug.ToString();
+    // public static implicit operator string(ModSlug modSlug) => modSlug.ToString();
 
     public override string ToString() => $"{MainId}{(Offset > 0 ? $"_{Offset}" : "")}";
 }

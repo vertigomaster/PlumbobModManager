@@ -18,13 +18,13 @@ public class JsonMonolithModLibraryService : IModLibraryService
     
     [JsonInclude]
     [JsonPropertyName("mods")]
-    internal List<ModEntry> _modList;
+    internal List<Mod> _serializableModList;
 
     [JsonIgnore]
-    private HashSet<ModEntry> _distinctModLut;
+    private HashSet<Mod> _distinctModLut;
 
     [JsonIgnore]
-    public IReadOnlyList<ModEntry> ModList => _modList;
+    public IReadOnlyList<Mod> ModList => _serializableModList;
 
     [JsonInclude]
     [JsonPropertyName("activeRig")]
@@ -48,7 +48,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
 
     public JsonMonolithModLibraryService()
     {
-        _modList = [];
+        _serializableModList = [];
         _distinctModLut = [];
         _rigs = [];
         _activeRig = null;
@@ -75,11 +75,11 @@ public class JsonMonolithModLibraryService : IModLibraryService
         get
         {
             var appConfig = ServiceLocator.Resolve<AppConfig>();
-            return Path.Combine(appConfig.UserSettings.ModLibraryPath, "modlibrary.json");
+            return Path.Combine(appConfig?.UserSettings.ModLibraryPath, "modlibrary.json");
         }
     }
 
-    public static JsonMonolithModLibraryService? LoadFromFile()
+    public static async Task<JsonMonolithModLibraryService?> LoadFromFileAsync()
     {
         string libConfigFile = ModLibraryConfigFile;
         
@@ -90,8 +90,12 @@ public class JsonMonolithModLibraryService : IModLibraryService
             return null;
         }
         
-        string modLibraryString = File.ReadAllText(libConfigFile);
-        var lib = Deserialize(modLibraryString);
+        string modLibraryString = await File.ReadAllTextAsync(libConfigFile);
+        
+        //while the deserializer does have an async overload,
+        //it would require refactoring stuff into a stream, which
+        //sounds like a lot of work that may not be worth it, so we're just doing this.
+        var lib = await DeserializeAsync(modLibraryString);
         
         if(lib == null)
         {
@@ -100,7 +104,10 @@ public class JsonMonolithModLibraryService : IModLibraryService
         }
         
         lib.InitializeFromSerializedData();
-        var report = lib.ValidateLibrary();
+        
+        //this one can take a while, so we'll do it in a background thread.
+        var report = await Task.Run(lib.ValidateLibrary);
+        
         if(report.HasErrors)
         {
             Debug.WriteLine("Mod library validation failed. Should re-scan.");
@@ -118,11 +125,24 @@ public class JsonMonolithModLibraryService : IModLibraryService
         return lib;
     }
 
-    public string Serialize() => JsonSerializer.Serialize(this, AppConfig.LibrarySerializerOptions);
+    public async Task<string> SerializeAsync() => await Task.Run(() => JsonSerializer.Serialize(this, AppConfig.LibrarySerializerOptions));
 
-    public static JsonMonolithModLibraryService? Deserialize(string serializedData) => JsonSerializer.Deserialize<JsonMonolithModLibraryService>(serializedData, AppConfig.LibrarySerializerOptions);
+    /// <summary>
+    /// Deserializes the given string into a mod library.
+    /// </summary>
+    /// <param name="serializedData"></param>
+    /// <returns></returns>
+    /// <remarks>Currently does an awkward Task.Run() wrap,
+    /// but correctly implementing JsonSerializer.DeserializeAsync()
+    /// would require a bit of refactoring and other work that may
+    /// not be worth the effort (yet). </remarks>
+    public static async Task<JsonMonolithModLibraryService?> DeserializeAsync(
+        string serializedData) => await Task.Run(() =>
+            JsonSerializer.Deserialize<JsonMonolithModLibraryService>(
+                serializedData, AppConfig.LibrarySerializerOptions));
 
-    public void SaveToFile(string? overridePath=null)
+    //TODO: async?
+    public async Task SaveToFileAsync(string? overridePath=null)
     {
         string modLibraryFile = overridePath ?? ModLibraryConfigFile;
         
@@ -135,81 +155,220 @@ public class JsonMonolithModLibraryService : IModLibraryService
             return;
         }
         Directory.CreateDirectory(modLibraryDir);
-        File.WriteAllText(modLibraryFile, Serialize());
+        await File.WriteAllTextAsync(modLibraryFile, await SerializeAsync());
         
         Debug.WriteLine("Mod library saved successfully.");
     }
 
+    /// <inheritdoc />
+    // public async Task CopyDirectorySubtreeIntoModEntryDirAsync(Uri subtreeUri, ModEntry thisEntry)
+    // {
+    //     
+    //     
+    //     await CopyDirectorySubtreeIntoModEntryAsync(subtreeUri.AbsolutePath, thisEntry);
+    // }
 
-    public ModEntry? GetModEntry(ModEntrySlug humanReadableIdentifier)
+    public async Task CopyFolderIntoModEntryAsync(string subtreePath, ModEntry thisEntry)
     {
-        return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == humanReadableIdentifier);
+        await CopyDirectorySubtreeIntoModEntryAsync(subtreePath, thisEntry.AbsPath);
     }
 
-    public Mod? GetMod(ModEntrySlug modEntryModEntrySlug)
+    public async Task CopyDirectorySubtreeIntoModEntryAsync(string subtree, string modEntryPath)
     {
-        return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == modEntryModEntrySlug).ModConcept;
+        Directory.CreateDirectory(modEntryPath);
+        
+        //enumerate all files (better than getting all up front)
+        var subtreeFilepaths = Directory.EnumerateFiles(
+            subtree, "*", SearchOption.AllDirectories);
+
+        //set it up to split up the work among all available cores
+        // var options = ;
+        
+        //instead of the "raw" task library, utilizes a parallelized "job-style" approach to run the foreach with parallel support.
+        await Parallel.ForEachAsync(subtreeFilepaths, 
+            new ParallelOptions {
+                MaxDegreeOfParallelism = Environment.ProcessorCount
+            },
+            async (absSrcFilePath, cancelToken) => 
+            {
+                string relFilePath = Path.GetRelativePath(
+                    subtree, absSrcFilePath);
+                string destPath = Path.Combine(
+                    modEntryPath, relFilePath);
+                
+                //ensure destination directory actually exists
+                //(bc that's not actually guaranteed unfortunately)
+                string? destDir = Path.GetDirectoryName(destPath);
+                if (destDir != null) Directory.CreateDirectory(destDir);
+                //if no valid dir, I guess there's nothing to create?
+
+                //Free up the parallel threads by using the
+                //well-optimized worker thread pool to handle the work in the background. 
+                await Task.Run(
+                    () => File.Copy(absSrcFilePath, destPath, overwrite: true), 
+                    cancelToken);
+            }
+        );
     }
 
-    public bool TryAddMod(ModEntry modEntry)
+
+    // public ModEntry? MaybeGetModEntry(ModEntrySlug humanReadableIdentifier)
+
+    // {
+
+    //     return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == humanReadableIdentifier);
+
+    // }
+
+
+    // public Mod? MaybeGetMod(ModEntrySlug modEntrySlug)
+
+    // {
+
+    //     return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == modEntrySlug)?.ModConcept;
+
+    // }
+
+
+    // public Mod? MaybeGetMod(ModSlug modSlug)
+
+    // {
+
+    //     return _distinctModLut.FirstOrDefault(entry => entry.ModConcept.Slug == modSlug)?.ModConcept;
+
+    // }
+
+
+    public bool TryAddMod(Mod mod, bool trySilently = false)
     {
-        //make all the checks before actually mutating state
-        if(_distinctModLut.Contains(modEntry))
+        //attempts to add the mod
+        if(!_distinctModLut.Add(mod))
         {
-            Console.WriteLine(
-                $"Failed to add mod '{modEntry.HumanReadableIdentifier}' to the library. Duplicate entry detected.");
+            if(!trySilently) Console.WriteLine(
+                $"Failed to add mod '{mod.Name}' ('{mod.Slug}') to the library. Duplicate entry detected.");
+            
             return false;
         }
-
-        //mutate state
-        _distinctModLut.Add(modEntry);
-        _modList.Add(modEntry);
         
-        Debug.WriteLine($"Added mod '{modEntry.HumanReadableIdentifier}' to the library.");
-        Debug.WriteLine($"Mod library now contains {_modList.Count} mods.");
+        _serializableModList.Add(mod);
+
+        Debug.WriteLine($"Add mod '{mod.Name}' to the library.");
+        Debug.WriteLine($"Mod library now contains {_serializableModList.Count} mods.");
+
         return true;
     }
 
+    //just realized the use case for this makes no sense; mod entries are always created with respect to an EXISTING mod. There's no reason or way to add a mod entry without adding its mod, at which point you should just add the mod directly.
 
-    public void RemoveMod(ModEntry modEntry)
+    //Will remove the commented code soon.
+
+    // public bool TryAddModEntry(ModEntry modEntry)
+
+    // {
+
+    //     TryAddMod(modEntry.ModConcept, trySilently:true); //ensures the entry's mod is added to the library.
+
+    //     
+
+    //     
+
+    //     
+
+    //     //make all the checks before actually mutating state
+
+    //     if(_distinctModLut.Contains(modEntry))
+
+    //     {
+
+    //         Console.WriteLine(
+
+    //             $"Failed to add mod '{modEntry.HumanReadableIdentifier}' to the library. Duplicate entry detected.");
+
+    //         return false;
+
+    //     }
+
+    //
+
+    //     //mutate state
+
+    //     _distinctModLut.Add(modEntry);
+
+    //     _serializableModList.Add(modEntry);
+
+    //     
+
+    //     Debug.WriteLine($"Added mod '{modEntry.HumanReadableIdentifier}' to the library.");
+
+    //     Debug.WriteLine($"Mod library now contains {_serializableModList.Count} mods.");
+
+    //     return true;
+
+    // }
+
+
+    public bool TryRemoveMod(Mod mod, bool trySilently = false)
     {
-        if(!_distinctModLut.Remove(modEntry)) return;
-        _modList.Remove(modEntry);
+        if (!_distinctModLut.Remove(mod))
+        {
+            if (!trySilently) Console.WriteLine($"Failed to remove mod '{mod.Name}' from the library. Mod not found.");
+            return false;
+        }
+        _serializableModList.Remove(mod);
         
-        Debug.WriteLine($"Removed mod '{modEntry.HumanReadableIdentifier}' from the library.");
-        Debug.WriteLine($"Mod library now contains {_modList.Count} mods.");
+        Debug.WriteLine($"Removed mod '{mod.Name}' from the library.");
+        Debug.WriteLine($"Mod library now contains {_serializableModList.Count} mods.");
         
         //TODO: trigger event that can inform all rigs, prob via a service?
         //as they'll need to be removed from the rig manifest as well -
         //either now or we have them update their rig manifests once they're reloaded.
         //The cache is more for record and seeing prior state than as a source of truth.
+        
+        return true;
     }
 
-    public bool IsValidMod(ModEntry? mod)
+    /// <summary>
+    /// Determines if the given mod is valid for use/etc.
+    /// This method is mostly just a sanity check, though its vagueness makes it less useful...
+    /// </summary>
+    /// <param name="mod"></param>
+    /// <returns></returns>
+    /// <remarks>
+    /// This may eventually be deprecated if we never have other validation checks.
+    /// </remarks>
+    public bool IsValidMod(Mod? mod)
     {
         //exists and is present
         return mod != null;
+        
+        /*
+         Keeping this comment as a warning in case you forget and come back here:
+         
+         Containment in the LUT cannot serve as validation criteria!
+        
+         had to remove due to cyclical issues; only valid mods should be added,
+         which means some valid mods won't yet be in the lookup table, therefore,
+         the LUT containing them cannot serve as a valid validity check 
+        */
         // _distinctModLut.Contains(mod);
     }
 
     public ModLibraryValidationResult ValidateLibrary()
     {
-        var results = new ModValidationResult[_modList.Count];
+        var results = new List<ModValidationResult>(_serializableModList.Count);
 
-        for (var index = 0; index < _modList.Count; index++)
+        foreach(var mod in _serializableModList)
         {
-            var modEntry = _modList[index];
-
-            bool valid = IsValidMod(modEntry);
-            bool exists = modEntry.ExistsOnDisk();
-            results[index] = new ModValidationResult(modEntry, valid, exists);
+            bool valid = IsValidMod(mod);
+            foreach (var entry in mod.Entries)
+            {
+                bool exists = entry.ExistsOnDisk();
+                results.Add(new ModValidationResult(entry, valid, exists));
+            }
         }
 
-        return new ModLibraryValidationResult(results);
+        return new ModLibraryValidationResult(results.ToArray());
     }
-
-    /// <inheritdoc />
-    List<ModRig> IModLibraryService.Rigs => _rigs;
 
     public IEnumerable<ModEntry> GetVisibleMods()
     {
@@ -228,9 +387,9 @@ public class JsonMonolithModLibraryService : IModLibraryService
     private void InitializeFromSerializedData()
     {
         Debug.WriteLine("Initializing mod library from serialized data...");
-        _distinctModLut = _modList.ToHashSet(); 
+        _distinctModLut = _serializableModList.ToHashSet(); 
         
-        Debug.WriteLine($"Mod library initialized successfully with {_modList.Count} mods.");
+        Debug.WriteLine($"Mod library initialized successfully with {_serializableModList.Count} mods.");
     }
 
     private void CreateDefaultRigIfNone()

@@ -21,8 +21,8 @@ public class ModRig
     private HashSet<Mod> _modLut;
 
     private List<ModEntry> _orderedInstallList;
+    
     public IReadOnlyList<ModEntry> OrderedInstallList => _orderedInstallList;
-
     public int Count => _modEntryLut.Count;
 
     #region Constructors/Factories
@@ -31,6 +31,7 @@ public class ModRig
     {
         _orderedInstallList = [];
         _modEntryLut = [];
+        _modLut = [];
     }
 
     public ModRig(ModRigSnapshot snapshot)
@@ -51,7 +52,6 @@ public class ModRig
         
         Mod[] potentialMods = _orderedInstallList
             .Select(entry => entry.ModConcept)
-            .Where(mod => mod != null)
             .Distinct()
             .ToArray()!;
         
@@ -88,11 +88,6 @@ public class ModRig
         return _orderedInstallList;
     }
     
-    public ModEntry? GetMod(ModEntry mod)
-    {
-        return _orderedInstallList.FirstOrDefault(m => m == mod);
-    }
-    
     public bool Contains(ModEntry mod)
     {
         return _modEntryLut.Contains(mod);
@@ -107,34 +102,23 @@ public class ModRig
 
     #region Mod Manipulation
     
-    private bool Internal_TryAddMod(ModEntry mod)
-    {
-        var lib = ServiceLocator.Resolve<IModLibraryService>();
-        return lib?.IsValidMod(mod) == true && _modEntryLut.Add(mod);
-    }
-    
-    private bool Internal_TryRemoveMod(ModEntry mod)
-    {
-        return _modEntryLut.Remove(mod);
-    }
-    
     public bool TryAddModEntryToEnd(ModEntry mod)
     {
-        if(!Internal_TryAddMod(mod)) return false;
+        if(!_TryAddMod(mod)) return false;
         _orderedInstallList.Add(mod);
         return true;
     }
 
     public bool TryAddModToStart(ModEntry mod)
     {
-        if (!Internal_TryAddMod(mod)) return false;
+        if (!_TryAddMod(mod)) return false;
         _orderedInstallList.Insert(0, mod);
         return true;
     }
 
     public bool TryAddModToIndex(ModEntry mod, int index)
     {
-        if (!Internal_TryAddMod(mod)) return false;
+        if (!_TryAddMod(mod)) return false;
         _orderedInstallList.Insert(index, mod);
         return true;
     }
@@ -149,9 +133,29 @@ public class ModRig
 
     public bool TryRemoveMod(ModEntry mod)
     {
-        if (!Internal_TryRemoveMod(mod)) return false;
+        if (!_TryRemoveMod(mod)) return false;
         _orderedInstallList.Remove(mod);
         return true;
+    }
+
+
+    private bool _TryAddMod(ModEntry modEntry)
+    {
+        if (!ServiceLocator.TryResolve(out IModLibraryService? lib))
+            throw new InvalidOperationException("ModLibraryService not registered!");
+
+        //Only add if the entry's mod is valid and if the entry isn't already in the rig
+        return lib!.IsValidMod(modEntry.ModConcept) && _modEntryLut.Add(modEntry) && _modLut.Add(modEntry.ModConcept);
+
+        //TODO: fire events or utilize an observer pattern?
+    }
+
+    private bool _TryRemoveMod(ModEntry mod)
+    {
+        //no extra checks since it's being removed anyway
+        return _modEntryLut.Remove(mod) && _modLut.Remove(mod.ModConcept);
+
+        //TODO: fire events or utilize an observer pattern?
     }
 
     #endregion

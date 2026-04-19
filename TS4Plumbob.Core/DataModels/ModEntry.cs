@@ -11,50 +11,81 @@ public record ModEntry
     //unless you have direct access to all of the properties being serialized.
     //This likely applies to all types, at least when working with System.Text.Json
     
-    [JsonInclude, JsonPropertyName("rootPath")]
-    public string RootPath { get; init; }
+    // [Obsolete("Realizing that we don't need these; we have the slugs and a determinsitic library file structure")]
+    // [JsonInclude, JsonPropertyName("rootPath")]
+    // public string RootPath { get; init; }
+
+    #region Core Properties
 
     [JsonInclude, JsonPropertyName("modMetadata")]
-    public ModMetadata? ModMetadata { get; init; }
+    public ModMetadata ModMetadata { get; init; }
 
-    public ModEntry() { }
-
-    public ModEntry(string rootPath, ModMetadata? modMetadata)
-    {
-        RootPath = rootPath;
-        ModMetadata = modMetadata;
-    }
-
-    public static ModEntry CreateNewUnique(string rootPath, ModMetadata? modMetadata = null)
-    {
-        return new ModEntry(rootPath, modMetadata);
-    }
-    
-    private bool _hasMetadata;
-    public bool HasMetadata => _hasMetadata;
-    
-    private AppConfig _AppConfig => ServiceLocator.Resolve<AppConfig>();
-    
-    public string RelPath
-    {
-        get
-        {
-            string? libPath = _AppConfig?.UserSettings?.ModLibraryPath;
-            return libPath is null ? RootPath : RootPath.Replace(libPath, "");
-        }
-    }
-
-    public string HumanReadableIdentifier => ModMetadata?.Name ?? $"UNNAMED ({RelPath})";
-    
-    public ModEntrySlug Slug {get; set;}
-    
     /// <summary>
     /// A back reference to the logical mod object this is an entry for.
     /// </summary>
-    public Mod? ModConcept { get; set; }
+    public Mod ModConcept { get; init; }
+
+    #endregion
+
+    #region Computed Properties
+
+    private AppConfig _AppConfig => ServiceLocator.Resolve<AppConfig>() ??
+        throw new InvalidOperationException("Null AppConfig");
+
+    private IModLibraryService _Lib => ServiceLocator.Resolve<IModLibraryService>() ??
+        throw new InvalidOperationException("Null Library/Null Library root path");
+
+    public string AbsPath => Path.Combine(_Lib.ModsPath, PathWithinLibraryMods);
+
+    /// <summary>
+    /// Where, relative to the library root, this entry's files are stored.'
+    /// </summary>
+    public string PathWithinLibraryMods => Path.Combine(
+        ModConcept.EntriesSubpath,
+        ModMetadata.Version.ToString(),
+        ModMetadata.VariantString);
+
+    public string HumanReadableIdentifier => ModMetadata.Name + " " + ModMetadata.Version;
+
+    public ModEntrySlug Slug => new(ModConcept.Slug, ModMetadata.Version);
+
+    #endregion
+
+    #region Constructors
+
+    public ModEntry() { }
+
+    public ModEntry(Mod mod, ModMetadata? modMetadata)
+    {
+        // RootPath = rootPath;
+        ModConcept = mod;
+        ModMetadata = modMetadata ?? mod.MetadataTemplate;
+    }
+
+    public ModEntry(Mod mod, Version entryVersion)
+    {
+        // RootPath = rootPath;
+        ModConcept = mod;
+        ModMetadata = mod.MetadataTemplate with { Version = entryVersion };
+    }
+    
+    #endregion
+    
+    #region Factory Methods
+
+    public static ModEntry CreateNewUnique(Mod mod, ModMetadata? modMetadata = null)
+    {
+        return new ModEntry(mod, modMetadata);
+    }
+    
+    #endregion
+    
+    #region Methods
 
     public bool ExistsOnDisk() 
     {
-        return Directory.Exists(RootPath);
+        return Directory.Exists(ModConcept.EntriesSubpath);
     }
+    
+    #endregion
 }

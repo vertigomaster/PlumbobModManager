@@ -57,7 +57,7 @@ public partial class PlumbobKernel()
         coreLifetimeTrove = new Trove("Plumbob Core Kernel");
         
         //here for now, may need to change or move to the application projects that use this library.
-        BindCoreServices();
+        _BindCoreServices();
         BindExternalServicesEvent?.Invoke();
         
         return 0;
@@ -69,7 +69,7 @@ public partial class PlumbobKernel()
         if (!IsRunning) return 0;
         PlumbobMsg.WriteDebugInfo("Shutting down PMM Kernel...");
         
-        DisposeCoreServices();
+        _DisposeCoreServices();
         
         IsRunning = false;
         return 0;
@@ -78,10 +78,10 @@ public partial class PlumbobKernel()
     /// <summary>
     /// bind services (might do a partial if this gets really big)
     /// </summary>
-    private void BindCoreServices()
+    private void _BindCoreServices()
     {
         PlumbobMsg.WriteDebugInfo("Binding Core Services...");
-        ServiceLocator.BindJumpstarter<AppConfig>(() => {
+        ServiceLocator.BindProvider<AppConfig>(() => {
             AppConfig newService = AppConfig.LoadFromDisk() ?? new AppConfig();
 
             coreLifetimeTrove.AddCleanup(nameof(AppConfig), () => {
@@ -94,24 +94,24 @@ public partial class PlumbobKernel()
             return newService;
         });
         
-        ServiceLocator.BindJumpstarter<IModLibraryService>(() => {
-            
-            
-            var newService = JsonMonolithModLibraryService.LoadFromFile() ?? 
+        ServiceLocator.BindAsyncProvider<IModLibraryService>(async () => {
+            var newService = await JsonMonolithModLibraryService.LoadFromFileAsync() ?? 
                 new JsonMonolithModLibraryService();
 
-            coreLifetimeTrove.AddCleanup(nameof(JsonMonolithModLibraryService), () => {
-                PlumbobMsg.WriteDebugInfo("Cleaning up ModLibraryService...");
-                ServiceLocator.TryUnregister<IModLibraryService>(newService);
-                newService.SaveToFile();
-                PlumbobMsg.WriteDebugInfo("ModLibraryService Cleanup Complete.");
+            coreLifetimeTrove.AddAsyncCleanup(
+                nameof(JsonMonolithModLibraryService), 
+                async () => {
+                    PlumbobMsg.WriteDebugInfo("Cleaning up ModLibraryService...");
+                    ServiceLocator.TryUnregister<IModLibraryService>(newService);
+                    await newService.SaveToFileAsync();
+                    PlumbobMsg.WriteDebugInfo("ModLibraryService Cleanup Complete.");
             });
 
             return newService;
         });
     }
 
-    private void DisposeCoreServices()
+    private void _DisposeCoreServices()
     {
         PlumbobMsg.WriteDebugInfo("Disposing Core Services...");
         coreLifetimeTrove.Dispose(); //well that was easy
