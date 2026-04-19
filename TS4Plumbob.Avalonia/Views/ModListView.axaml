@@ -1,0 +1,79 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:TS4Plumbob.Avalonia.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="TS4Plumbob.Avalonia.Views.ModListView"
+             x:DataType="vm:RootViewModel">
+    
+    <Panel>
+        <!-- <SplitView HorizontalAlignment="Left"> -->
+        <!--     <Rectangle/> -->
+        <!-- </SplitView> -->
+        <StackPanel Background="DarkSeaGreen">
+            <Border Background="ForestGreen">
+                <Border Margin="10">
+                    <TextBlock Text="{
+                        Binding ModLibraryFolder.Path.LocalPath, 
+                        StringFormat='Current Folder: {0}',
+                        FallbackValue=Current Folder: NONE}"/>
+                </Border>
+            </Border>
+
+            <StackPanel Orientation="Horizontal">
+                
+                <StackPanel Margin="10">
+                    <TextBlock Text="Actions" 
+                               FontStyle="Italic" 
+                               HorizontalAlignment="Center"/>
+                    
+                    
+                    <Button HorizontalAlignment="Stretch" 
+                            Command="{Binding CopyModToLibraryCommand}">
+                        Copy Mod To Library
+                    </Button>
+                    <Button HorizontalAlignment="Stretch">
+                        Install Mod From Archive
+                    </Button>
+                </StackPanel>
+
+                <ScrollViewer>
+                    <!-- TODO: Finish after the model's explicit ID clutter is take care of -->
+                    <ItemsControl>
+                        <!--Defines the control's panel that will display our items-->
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ListBox/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        
+                        <!--Defines the control's individual item template - 
+                        used to form each ITEM within the PANEL template. 
+                        Each item within the ItemsSource bound to the control 
+                        will be displayed using an instance of the item template-->
+                        <ItemsControl.ItemTemplate>
+                            <!-- The DataContext of this scope is of the 
+                            type stored in the source collection.
+                            Beyond that,it's just regular display -->
+                            <DataTemplate>
+                                <Border BorderBrush="Gray" BorderThickness="1" 
+                                        Padding="10" CornerRadius="10">
+                                    <StackPanel Orientation="Horizontal">
+                                        <!-- TODO: need to fix model so that we can bind the VM data -->
+                                        <!-- <CheckBox IsChecked="{Binding IsEnabled}"></CheckBox> -->
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    
+                </ScrollViewer>
+            </StackPanel>
+        </StackPanel>
+            
+        <!-- TODO: somehow put under zone with stack panel -->
+        
+    </Panel>
+        
+</UserControl>

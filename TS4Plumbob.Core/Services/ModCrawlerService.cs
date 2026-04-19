@@ -9,6 +9,10 @@
 /// </remarks>
 public class ModCrawlerService
 {
-    //may have to revise this, assuming we even need it to work this way
-    // private readonly string[] _validExtensions = { ".package", ".ts4script" };
+    //Action: Scan Library, return mod folders
+    //Action: Scan Mod folders, return mod files
+    //Action: ??
+    
+    //the more I think about it, the less this makes sense.
+    //I don't think we need to write a crawler until we have a use case.
 }

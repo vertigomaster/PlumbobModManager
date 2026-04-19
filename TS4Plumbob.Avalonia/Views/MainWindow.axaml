@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:TS4Plumbob.Avalonia.ViewModels"
+        xmlns:views="clr-namespace:TS4Plumbob.Avalonia.Views"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+        x:Class="TS4Plumbob.Avalonia.Views.MainWindow"
+        x:DataType="vm:RootViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="{Binding AppTitle}">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:RootViewModel />
+    </Design.DataContext>
+
+    <!-- <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"> -->
+    <!--     <views:NoDataView/> -->
+    <!-- </StackPanel> -->
+    
+    <Panel>
+        <!-- main views -->
+        <Grid>
+            <views:NoDataView IsVisible="{Binding !HasLibraryFolder}"/>
+            <views:ModListView IsVisible="{Binding HasLibraryFolder}"/>
+        </Grid>
+        
+        <!-- toasts -->
+        <StackPanel VerticalAlignment="Bottom"
+                    HorizontalAlignment="Stretch">
+            <!-- TODO: animate these coming in and out and stacking multiple of them (maybe wrap as a user control) -->
+            <Border Background="IndianRed" 
+                    VerticalAlignment="Bottom" 
+                    HorizontalAlignment="Center"
+                    CornerRadius="15"
+                    Padding="20" Margin="10">
+                
+                <TextBlock>Toast Example!</TextBlock>
+            </Border>
+        </StackPanel>
+    </Panel>
+    
+    <!-- <Canvas></Canvas> -->
+
+
+</Window>

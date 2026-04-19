@@ -1,4 +1,6 @@
 ﻿using System.CommandLine;
+using IDEK.Tools.ShocktroopUtils.Services;
+using TS4Plumbob.Core.DataModels;
 
 namespace Plumbob.CLI;
 
@@ -87,6 +89,34 @@ public static class PlumbobCmd
         return testCommand;
     }
 
+    private static Command BuildLibraryCommands()
+    {
+        Command libraryMetaCommand = new("library", "Commands associated with the mod library.");
+        
+        Command selectLibraryCommand = new("select", "Selects the folder to use as the mod library.");
+        selectLibraryCommand.Add(new Argument<string>("lib-path"));
+        selectLibraryCommand.SetAction(parseResult => {
+            string libPath = parseResult.GetValue<string>("lib-path") ?? string.Empty;
+            PlumbobMsg.WriteUserMsg($"Selected library path: {libPath}");
+            
+            if (string.IsNullOrWhiteSpace(libPath))
+            {
+                PlumbobMsg.WriteUserError("Library path cannot be empty or whitespace.");
+                return;
+            }
+            
+            var appConfig = ServiceLocator.Resolve<AppConfig>();
+            appConfig.UserSettings.ModLibraryPath = libPath;
+            appConfig.SaveToDisk();
+        });
+        
+        Command listLibraryCommand = new("list", "Lists all mods in the library.");
+        
+        libraryMetaCommand.Subcommands.Add(selectLibraryCommand);
+        libraryMetaCommand.Subcommands.Add(listLibraryCommand);
+        return libraryMetaCommand;
+    }
+    
     private static Command BuildRigCommands()
     {
         Command rigMetaCommand = new("rig", "Commands associated with whole mod rigs.");
@@ -105,9 +135,12 @@ public static class PlumbobCmd
     {
         Command modMetaCommand = new("mod", "mod meta-command");
 
-        Command addModArchiveCommand = new("add-mod", "adds a new mod archive");
+        Command installModArchiveCommand = new("install", 
+            "installs a new mod from its archive/instructions");
+        Command addModFolderCommand = new("add", "adds a new mod folder by copying it");
 
-        modMetaCommand.Subcommands.Add(addModArchiveCommand);
+        modMetaCommand.Subcommands.Add(installModArchiveCommand);
+        modMetaCommand.Subcommands.Add(addModFolderCommand);
         return modMetaCommand;
     }
 }

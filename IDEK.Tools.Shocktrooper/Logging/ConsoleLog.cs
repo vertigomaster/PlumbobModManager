@@ -146,7 +146,7 @@ namespace IDEK.Tools.Logging
             }
 #else
             Console.ForegroundColor = ConsoleColor.Red;
-            Debug.WriteLine("🛑 " + genMsg);
+            Console.WriteLine("🛑 " + genMsg);
             Console.ResetColor();
 #endif
         }
