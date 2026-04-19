@@ -1,0 +1,29 @@
+﻿name: .NET Core Unit Tests
+
+on:
+  push:
+    branches: [ "main", "master", "beta" ]
+  pull_request:
+    branches: [ "main", "master", "beta" ]
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Restore dependencies
+      run: dotnet restore PlumbobModManager_crossplat.Filter.slnf 
+    - name: Build
+      run: dotnet build PlumbobModManager_crossplat.Filter.slnf --no-restore
+    - name: Test
+      run: dotnet test PlumbobModManager.Tests/PlumbobModManager.Tests.csproj --no-build --verbosity normal
