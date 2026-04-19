@@ -92,7 +92,16 @@ public class Mod
     /// <returns></returns>
     public ModEntry AddNewEntry(Version version, string variantString="")
     {
-        return AddNewEntry(MetadataTemplate with { Version = version });
+        var successfulEntry = AddNewEntry(MetadataTemplate with
+        {
+            Version = version
+        });
+        
+        Console.WriteLine($"Created new entry for {successfulEntry.Slug}");
+        Directory.CreateDirectory(successfulEntry.AbsPath);
+        Console.WriteLine($"Created directory for {successfulEntry.Slug} at '{successfulEntry.AbsPath}'");
+        
+        return successfulEntry;
     }
     
     /// <summary>
@@ -132,5 +141,27 @@ public class Mod
         return Entries.Any(e => e.ModMetadata.Version == version);
     }
     
+    #endregion
+
+    #region Overrides of Object
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        if(obj is not Mod other) return false;
+        
+        return MetadataTemplate.Equals(other.MetadataTemplate) && Slug.Equals(other.Slug);
+    }
+
+    #region Equality members
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(MetadataTemplate, Slug);
+    }
+
+    #endregion
+
     #endregion
 }

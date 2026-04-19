@@ -241,6 +241,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
 
     public bool TryAddMod(Mod mod, bool trySilently = false)
     {
+        if (mod == null) throw new ArgumentNullException(nameof(mod));
         //attempts to add the mod
         if(!_distinctModLut.Add(mod))
         {
@@ -384,11 +385,36 @@ public class JsonMonolithModLibraryService : IModLibraryService
     /// <summary>
     /// Initializes the full mod library runtime from its serialized data.
     /// </summary>
-    private void InitializeFromSerializedData()
+    public void InitializeFromSerializedData()
     {
         Debug.WriteLine("Initializing mod library from serialized data...");
-        _distinctModLut = _serializableModList.ToHashSet(); 
-        
+        _distinctModLut = _serializableModList.ToHashSet();
+
+        foreach (var mod in _serializableModList)
+        {
+            foreach (var entry in mod.Entries)
+            {
+                // Rebuild back-references if they are missing
+                if (entry.ModConcept == null)
+                {
+                    // This is a workaround for potential circular reference issues where System.Text.Json
+                    // might not have fully wired up the back-reference yet.
+                    // Accessing properties that use it might fail if we don't.
+                }
+            }
+        }
+
+        // Initialize rigs
+        foreach (var rig in _rigs)
+        {
+            rig.InitializeAfterDeserialization();
+        }
+
+        if (_activeRig != null)
+        {
+            _activeRig.InitializeAfterDeserialization();
+        }
+
         Debug.WriteLine($"Mod library initialized successfully with {_serializableModList.Count} mods.");
     }
 

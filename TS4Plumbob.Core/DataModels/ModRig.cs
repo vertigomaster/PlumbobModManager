@@ -71,6 +71,11 @@ public class ModRig
 
     #endregion
 
+    public void InitializeAfterDeserialization()
+    {
+        _InitModRigFromInstallOrder();
+    }
+
     #region Validation Checks
 
     private void AssertNoDuplicateModEntries()

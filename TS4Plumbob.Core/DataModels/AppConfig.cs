@@ -9,8 +9,11 @@ namespace TS4Plumbob.Core.DataModels;
 /// <summary>
 /// Serializable class for configuration "settings" that are controllable/modifiable by the "user" - hence the name.
 /// </summary>
-public class UserSettings
+public record UserSettings
 {
+    //for deserialization/instantiation only
+    public UserSettings() { }
+    
     /// <summary>
     /// The root of the entire mod library. Pretty much all app-generated files are stored here.
     /// </summary>

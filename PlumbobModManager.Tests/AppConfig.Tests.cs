@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using IDEK.Tools.ShocktroopUtils.Services;
 using TS4Plumbob.Core.DataModels;
 
 namespace PlumbobModManager.Tests;
@@ -28,7 +29,13 @@ public class AppConfigTests
     [SetUp]
     public void Setup()
     {
-        
+        ServiceLocator.Reset();
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        ServiceLocator.Reset();
     }
     
     [Test]
@@ -62,33 +69,33 @@ public class AppConfigTests
     }       
 }
 
-public class ModEntryTests
+public class ModEntryTests : AbstractPlumbobTest
 {
     private const string BASE_DIR = TestUtils.PMM_UNIT_TEST_BASE_DIR;
     private const string TEST_MOD_DIR_NAME = "TestMod";
     private const string TEST_MOD_NAME = "Test Mod";
     private string TestModPath => Path.Combine(BASE_DIR, TEST_MOD_DIR_NAME);
     
-    [SetUp]
-    public void Setup()
-    {
-        //reset with a fresh directory for testing
-        if (Directory.Exists(BASE_DIR))
-        {
-            Directory.Delete(BASE_DIR, true);
-        }
-
-        Directory.CreateDirectory(BASE_DIR);
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        if (Directory.Exists(BASE_DIR))
-        {
-            Directory.Delete(BASE_DIR, true);
-        }
-    }
+    // [SetUp]
+    // public void Setup()
+    // {
+    //     //reset with a fresh directory for testing
+    //     if (Directory.Exists(BASE_DIR))
+    //     {
+    //         Directory.Delete(BASE_DIR, true);
+    //     }
+    //
+    //     Directory.CreateDirectory(BASE_DIR);
+    // }
+    //
+    // [TearDown]
+    // public void TearDown()
+    // {
+    //     if (Directory.Exists(BASE_DIR))
+    //     {
+    //         Directory.Delete(BASE_DIR, true);
+    //     }
+    // }
     
     [Test]
     public void ModDiskTest()
@@ -119,6 +126,14 @@ public class ModEntryTests
         File.WriteAllBytes(testTs4ScriptPath, testTs4ScriptBytes);
         File.WriteAllText(testReadmePath, testReadmeText);
         
+        // Setup service locator for ModEntry.ExistsOnDisk
+        var appConfig = new AppConfig();
+        appConfig.UserSettings.ModLibraryPath = BASE_DIR;
+        IDEK.Tools.ShocktroopUtils.Services.ServiceLocator.Register<AppConfig>(appConfig);
+        
+        var lib = new JsonMonolithModLibraryService();
+        IDEK.Tools.ShocktroopUtils.Services.ServiceLocator.Register<IModLibraryService>(lib);
+
         // string expectedModSlugString = ""
         
         //quick check that the test setup is it self correct
@@ -139,8 +154,10 @@ public class ModEntryTests
         
         Assert.That(testModEntry, Is.Not.Null, 
             "ModEntry should not be null");
+        Console.WriteLine($"testModEntry '{testModEntry}' " +
+            $"can be found at '{testModEntry.AbsPath}'");
         Assert.That(testModEntry.ExistsOnDisk, Is.True, 
-            "ModEntry should exist on disk");       
+            $"ModEntry should exist on disk (specifically, '{testModEntry.AbsPath}' should exist during the test)");       
         
     }
 }

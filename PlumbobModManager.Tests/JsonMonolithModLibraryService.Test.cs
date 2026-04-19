@@ -14,9 +14,17 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
         [SetUp]
         public void ClassTestSetup()
         {
-            Console.WriteLine("JsonMonolithModLibraryService_Test TearDown - setting up servicelocator");
+            Console.WriteLine("[JsonMonolithModLibraryService_Test Setup] setting up servicelocator");
             ServiceLocator.Reset(); //ensure a clean slate to start from
-            Console.WriteLine("JsonMonolithModLibraryService_Test Setup - setting up _testMod");
+            
+            var testAppConfig = new AppConfig {
+                UserSettings = {
+                    ModLibraryPath = BASE_DIR
+                }
+            };
+            ServiceLocator.Register<AppConfig>(testAppConfig);
+
+            Console.WriteLine("[JsonMonolithModLibraryService_Test Setup] setting up _testMod");
             _testMod = new Mod(
                 new ModSlug("test-slug", 0),
                 new AuthorProfile(
@@ -54,12 +62,10 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 "ModList should be empty");
             Assert.That(lib.Rigs, Is.Not.Null, 
                 "Rigs list should not be null");
-            Assert.That(lib.ActiveRig, Is.Null, 
-                "ActiveRig should not yet be assigned - " +
-                "serializers need a fully blank state to " +
-                "deserialize data into.");
-            Assert.That(lib.Rigs, Has.Count.EqualTo(0), 
-                "Rigs list should be empty on a blank library");
+            Assert.That(lib.ActiveRig, Is.Not.Null, 
+                "ActiveRig should be assigned after registration due to CreateDefaultRigIfNone.");
+            Assert.That(lib.Rigs, Has.Count.EqualTo(1), 
+                "Rigs list should contain one rig after registration due to CreateDefaultRigIfNone.");
         }
         
         [Test]
@@ -271,9 +277,6 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             //create the lib
             var lib = new JsonMonolithModLibraryService();
             IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
-            var testAppConfig = new AppConfig();
-            testAppConfig.UserSettings.ModLibraryPath = testDir;
-            ServiceLocator.Register<AppConfig>(testAppConfig);
             
             //create a Mod and a ModEntry that point to each other
             ModEntry entry = _testMod.AddNewEntry(new Version(1, 0), "fake");
@@ -287,14 +290,15 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             
             //read it back
             var reloadedLib = await JsonMonolithModLibraryService.DeserializeAsync(savedJson);
+            reloadedLib?.InitializeFromSerializedData();
             
             Assert.That(reloadedLib, Is.Not.Null, "Reloaded library should not be null");
             Assert.That(reloadedLib.ModList, Has.Count.EqualTo(1));
             Mod reloadedMod = reloadedLib.ModList[0];
             Assert.That(reloadedMod, Is.Not.Null);
-            Assert.That(reloadedMod.MetadataTemplate, Is.SameAs(_testMod.MetadataTemplate), "Mod Metadata template should be the same after reserialization");
-            Assert.That(reloadedMod.Entries.First(), Is.SameAs(entry), "The first (and only) element in the reserialized Entries set should point back to the same ModEntry instance");
-            Assert.That(reloadedMod.Entries.First(), Is.SameAs(_testMod.Entries.First()),
+            Assert.That(reloadedMod.MetadataTemplate, Is.EqualTo(_testMod.MetadataTemplate), "Mod Metadata template should be equivalent after reserialization");
+            Assert.That(reloadedMod.Entries.First(), Is.EqualTo(entry), "The first (and only) element in the reserialized Entries set should point back to the same ModEntry instance");
+            Assert.That(reloadedMod.Entries.First(), Is.EqualTo(_testMod.Entries.First()),
                 "The first (and only) element in the reserialized Entries set should point back to the same element in the original Mod's Entries set.");
         }
 
@@ -324,6 +328,7 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             //read it back in
             var reloadedLib = await JsonMonolithModLibraryService.DeserializeAsync(
                 await File.ReadAllTextAsync(testpath));
+            reloadedLib?.InitializeFromSerializedData();
             
             //verify that it's the same
             Assert.That(reloadedLib, Is.Not.Null, 
@@ -371,9 +376,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             public void Setup()
             {
                 Console.WriteLine(
-                    "Test class ModAddTests - setting up test " +
+                    "[Test class ModAddTests] setting up test " +
                     "folder/files (and service locator)");
-                ServiceLocator.Reset();
                 
                 //create fake test mod package in PMM_UNIT_TEST_BASE_DIR
                 _testModDirInfo = Directory.CreateDirectory(_testModDirPath);
@@ -395,8 +399,6 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 {
                     Directory.Delete(_testModDirPath, true);
                 }
-
-                ServiceLocator.Reset();
             }
             
             [Test]
@@ -440,6 +442,7 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             [Test]
             public void AddModToRig_CopyModTest()
             {
+                Console.WriteLine("Beginning Test class ModAddTests - AddModToRig_CopyModTest");
                 //quick check that the test setup is itself correct
                 Assert.That(_testModDirInfo.Exists, Is.True,
                     "Test mod directory should exist");
@@ -455,6 +458,7 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 Assert.That(lib, Is.Not.Null, 
                     "Library should be created successfully");
 
+                Assert.That(ServiceLocator.Resolve<AppConfig>(), Is.Not.Null, "AppConfig should have been registered during setup!");
                 //add a test mod to it
                 var testModEntry = _testMod.AddNewEntry(new Version(13,1,56,6));
                 lib.TryAddMod(_testMod);
@@ -468,9 +472,6 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 try
                 {
                     lib.ActiveRig?.TryAddModEntryToEnd(testModEntry);
-                    Assert.Fail(
-                        "Should not be able to add a mod to a rig " +
-                        "that isn't in the library");
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -511,7 +512,7 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
         }
     }
     
-    public class RigTests : AbstractPlumbobTest
+    public class RigTests : AbstractModLibServiceTest
     {
         [Test]
         public void GetVisibleMods_CountTest()

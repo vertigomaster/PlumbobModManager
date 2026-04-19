@@ -42,8 +42,8 @@ public record ModEntry
     /// </summary>
     public string PathWithinLibraryMods => Path.Combine(
         ModConcept.EntriesSubpath,
-        ModMetadata.Version.ToString(),
-        ModMetadata.VariantString);
+        ModSlug.SanitizeForSlug(ModMetadata.Version.ToString()),
+        ModSlug.SanitizeForSlug(ModMetadata.VariantString));
 
     public string HumanReadableIdentifier => ModMetadata.Name + " " + ModMetadata.Version;
 
@@ -84,8 +84,19 @@ public record ModEntry
 
     public bool ExistsOnDisk() 
     {
-        return Directory.Exists(ModConcept.EntriesSubpath);
+        return Directory.Exists(AbsPath);
     }
     
     #endregion
+    public virtual bool Equals(ModEntry? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ModMetadata.Equals(other.ModMetadata) && ModConcept.Slug.Equals(other.ModConcept.Slug);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(ModMetadata, ModConcept.Slug);
+    }
 }
