@@ -295,7 +295,23 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             }
 #endif
 
-            return _Jumpstart(out T? resolve) ? resolve : default;
+            if (_Jumpstart(out T? resolve))
+            {
+                return resolve;
+            }
+
+            //we leave til the end bc the earlier processes are more likely to
+            //succeed, saving us the additional operations. 
+            if(AsyncJumpstarters.ContainsKey(typeof(T)))
+            {
+                throw new InvalidOperationException(
+                    $"Async services must be resolved with {nameof(ResolveAsync)}(), not {nameof(Resolve)}(). " +
+                    $"The type {typeof(T).FullName} is bound to an {nameof(IAsyncServiceProvider<T>)}/async jumpstarter. " +
+                    $"\nUse {nameof(ResolveAsync)}() when possible, as it can handle both asynchronous " +
+                    $"and synchronous bindings.");
+            }
+
+            return default;
         }
 
         private static readonly SemaphoreSlim _resolveLock = new(

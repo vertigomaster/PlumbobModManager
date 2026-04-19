@@ -194,7 +194,7 @@ public partial class RootViewModel : ViewModelBase
                 $"@ '{thisEntry.AbsPath}'");
             
             await Library.CopyFolderIntoModEntryAsync(
-                result.Path.AbsolutePath, thisEntry);
+                result.Path.LocalPath, thisEntry);
             
             Library.SaveToFileAsync();
         }
