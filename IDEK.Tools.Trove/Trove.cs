@@ -8,7 +8,7 @@ namespace IDEK.Tools.Trove;
 /// <remarks>
 /// How to use: add an IDisposable element to the Trove, this can be a wrapper for an event, a service that needs to run cleanup code, anything else. The main benefit over using a deconstructor is that it occurs on a thread used by your application instead of the other specialized thread(s) used by deconstructors. That and being able to dispose anything, not just a (de)constructable class.
 /// </remarks>
-public class Trove(string name) : IDisposable
+public class Trove(string name) : IDisposable, IAsyncDisposable
 {
     public string Name { get; } = name;
     
@@ -22,10 +22,12 @@ public class Trove(string name) : IDisposable
 
     // public string Name { get; init; }
     private Dictionary<string, IDisposable> _items = [];
+    private Dictionary<string, IAsyncDisposable> _asyncItems = [];
 
     public IEnumerable<IDisposable> Items => _items.Values;
+    public IEnumerable<IDisposable> AsyncItems => _items.Values;
 
-    public int Count => _items.Count;
+    public int Count => _items.Count + _asyncItems.Count;
 
     /// <summary>
     /// How many elements are in this Trove, including troves nested within it.
@@ -71,6 +73,13 @@ public class Trove(string name) : IDisposable
                 recursiveCount += trove.RecursiveCount;
             }
         }
+        foreach (KeyValuePair<string, IAsyncDisposable> asyncItem in _asyncItems)
+        {
+            if (asyncItem.Value is Trove trove)
+            {
+                recursiveCount += trove.RecursiveCount;
+            }
+        }
 
         return recursiveCount + Count;
     }
@@ -86,13 +95,16 @@ public class Trove(string name) : IDisposable
     /// <returns></returns>
     public bool Contains(IDisposable disposableTroveItem) => 
         _items.Values.Contains(disposableTroveItem);
+    
+    public bool Contains(IAsyncDisposable disposableTroveItem) => 
+        _asyncItems.Values.Contains(disposableTroveItem);
 
     /// <summary>
     /// Determines whether the Trove contains an element with the specified tag.
     /// </summary>
     /// <param name="tag">The tag associated with the element to locate in the Trove.</param>
     /// <returns>True if the Trove contains an element with the specified tag; otherwise, false.</returns>
-    public bool Contains(string tag) => _items.ContainsKey(tag);
+    public bool Contains(string tag) => _items.ContainsKey(tag) || _asyncItems.ContainsKey(tag);
 
     // /// <summary>
     // /// Add multiple new elements which will be disposed when the Trove is
@@ -116,17 +128,8 @@ public class Trove(string name) : IDisposable
     public Trove Remove(string tag)
     {
         _items.Remove(tag);
+        _asyncItems.Remove(tag);
         return this;
-    }
-    
-    public void Dispose()
-    {
-        foreach (KeyValuePair<string, IDisposable> item in _items)
-        {
-            //TODO: enable debug logging
-            Debug.WriteLine($"Disposing {item.Key}");
-            item.Value.Dispose();
-        }
     }
     
     #region Helper Functions
@@ -148,6 +151,17 @@ public class Trove(string name) : IDisposable
         return this;
     }
 
+    public Trove AddAsyncCleanup(string tag, IAsyncDisposable disposableTroveItem)
+    {
+        Debug.WriteLine($"fooble [Trove] Adding key {tag} to {Name}");
+        if (!_asyncItems.TryAdd(tag, disposableTroveItem))
+        {
+            Console.WriteLine($"[Trove] Warning - Key {tag} already exists in {Name}, ignoring.");
+        }
+
+        return this;
+    }
+
     public Trove AddCleanup(string tag, Action onDispose) => 
         AddCleanup(tag, new DisposableAction(onDispose));
 
@@ -156,6 +170,49 @@ public class Trove(string name) : IDisposable
 
     public Trove AddCleanup(Trove innerTrove) => AddCleanup(innerTrove.Name, innerTrove);
     
+    public Trove AddAsyncCleanup(string tag, Func<Task> onDisposeAsync) =>
+        AddAsyncCleanup(tag, new DisposableAsyncAction(async () => await onDisposeAsync()));
+    
+    public Trove AddAsyncCleanup(Func<Task> onDisposeAsync) =>
+        AddAsyncCleanup(UniqueTag, onDisposeAsync);
+    
+    #endregion
+
+    #region Implementation of IDisposable
+
+    public void Dispose()
+    {
+        foreach (var disposableItem in _items)
+        {
+            //TODO: enable debug logging
+            Debug.WriteLine($"Disposing {disposableItem.Key}");
+            disposableItem.Value.Dispose();
+        }
+        _items.Clear();
+    }
+
+    #endregion
+
+    #region Implementation of IAsyncDisposable
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var disposableItem in _items)
+        {
+            Debug.WriteLine($"Disposing {disposableItem.Key} (with async dispose)");
+            if(disposableItem.Value is IAsyncDisposable asyncDisposableItem)
+            {
+                await asyncDisposableItem.DisposeAsync();
+            }
+            else
+            {
+                disposableItem.Value.Dispose();
+            }
+        }
+        _items.Clear();
+    }
+
     #endregion
 }
 
@@ -173,8 +230,28 @@ public class DisposableAction(Action onDispose) : IDisposable
     public void Dispose()
     {
         
-        var toDispose = Interlocked.Exchange(ref _onDispose, null);
+        Action toDispose = Interlocked.Exchange(ref _onDispose, null);
 
-        toDispose?.Invoke();
+        toDispose.Invoke();
+    }
+}
+
+//not an action because async stuff always returns something (a Task at minimum)
+/// <summary>
+/// Async version of <see cref="DisposableAction"/>. Wraps a given
+/// <see cref="Func{ValueTask}"/> within an <see cref="IAsyncDisposable"/>.
+/// </summary>
+/// <param name="onDisposeAsync"></param>
+public class DisposableAsyncAction(Func<ValueTask> onDisposeAsync) : IAsyncDisposable
+{
+    private Func<ValueTask>? _onDisposeAsync = onDisposeAsync;
+    
+    public async ValueTask DisposeAsync()
+    {
+        Func<ValueTask>? toDispose = Interlocked.Exchange(ref _onDisposeAsync, null);
+        if(toDispose != null)
+        {
+            await toDispose.Invoke();
+        }
     }
 }
