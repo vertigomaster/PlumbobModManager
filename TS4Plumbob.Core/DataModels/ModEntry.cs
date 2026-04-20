@@ -32,7 +32,7 @@ public record ModEntry
     private AppConfig _AppConfig => ServiceLocator.Resolve<AppConfig>() ??
         throw new InvalidOperationException("Null AppConfig");
 
-    private IModLibraryService _Lib => ServiceLocator.Resolve<IModLibraryService>() ??
+    private IAsyncModLibraryService _Lib => ServiceLocator.Resolve<IAsyncModLibraryService>() ??
         throw new InvalidOperationException("Null Library/Null Library root path");
 
     public string AbsPath => Path.Combine(_Lib.ModsPath, PathWithinLibraryMods);

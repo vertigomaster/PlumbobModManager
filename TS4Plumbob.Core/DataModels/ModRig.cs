@@ -146,7 +146,7 @@ public class ModRig
 
     private bool _TryAddMod(ModEntry modEntry)
     {
-        if (!ServiceLocator.TryResolve(out IModLibraryService? lib))
+        if (!ServiceLocator.TryResolve(out IAsyncModLibraryService? lib))
             throw new InvalidOperationException("ModLibraryService not registered!");
 
         //Only add if the entry's mod is valid and if the entry isn't already in the rig

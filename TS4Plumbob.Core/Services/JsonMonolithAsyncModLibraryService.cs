@@ -9,7 +9,7 @@ namespace TS4Plumbob.Core.DataModels;
 /// The set of all mods known to Plumbob
 /// </summary>
 [Serializable]
-public class JsonMonolithModLibraryService : IModLibraryService
+public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
 {
     //scans filesystem to find them all
     
@@ -46,7 +46,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
     /// <inheritdoc />
     public IReadOnlyList<ModRig> Rigs => _rigs;
 
-    public JsonMonolithModLibraryService()
+    public JsonMonolithAsyncModLibraryService()
     {
         _serializableModList = [];
         _distinctModLut = [];
@@ -79,7 +79,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
         }
     }
 
-    public static async Task<JsonMonolithModLibraryService?> LoadFromFileAsync()
+    public static async Task<JsonMonolithAsyncModLibraryService?> LoadFromFileAsync()
     {
         string libConfigFile = ModLibraryConfigFile;
         
@@ -136,9 +136,9 @@ public class JsonMonolithModLibraryService : IModLibraryService
     /// but correctly implementing JsonSerializer.DeserializeAsync()
     /// would require a bit of refactoring and other work that may
     /// not be worth the effort (yet). </remarks>
-    public static async Task<JsonMonolithModLibraryService?> DeserializeAsync(
+    public static async Task<JsonMonolithAsyncModLibraryService?> DeserializeAsync(
         string serializedData) => await Task.Run(() =>
-            JsonSerializer.Deserialize<JsonMonolithModLibraryService>(
+            JsonSerializer.Deserialize<JsonMonolithAsyncModLibraryService>(
                 serializedData, AppConfig.LibrarySerializerOptions));
 
     //TODO: async?

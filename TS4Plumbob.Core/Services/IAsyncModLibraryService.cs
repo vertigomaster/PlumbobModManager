@@ -2,7 +2,7 @@
 
 namespace TS4Plumbob.Core.DataModels;
 
-public interface IModLibraryService : IService
+public interface IAsyncModLibraryService : IService
 {
     Task<string> SerializeAsync();
     

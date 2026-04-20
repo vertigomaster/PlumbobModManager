@@ -44,7 +44,7 @@ public class Mod
     #region Service Accessors
     
     private AppConfig? _AppConfig => ServiceLocator.Resolve<AppConfig>();
-    private IModLibraryService? _Lib => ServiceLocator.Resolve<IModLibraryService>();
+    private IAsyncModLibraryService? _Lib => ServiceLocator.Resolve<IAsyncModLibraryService>();
     
     #endregion
     #region Computed Properties

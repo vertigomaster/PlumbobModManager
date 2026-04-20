@@ -131,8 +131,8 @@ public class ModEntryTests : AbstractPlumbobTest
         appConfig.UserSettings.ModLibraryPath = BASE_DIR;
         IDEK.Tools.ShocktroopUtils.Services.ServiceLocator.Register<AppConfig>(appConfig);
         
-        var lib = new JsonMonolithModLibraryService();
-        IDEK.Tools.ShocktroopUtils.Services.ServiceLocator.Register<IModLibraryService>(lib);
+        var lib = new JsonMonolithAsyncModLibraryService();
+        IDEK.Tools.ShocktroopUtils.Services.ServiceLocator.Register<IAsyncModLibraryService>(lib);
 
         // string expectedModSlugString = ""
         
