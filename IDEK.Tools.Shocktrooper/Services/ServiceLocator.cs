@@ -632,12 +632,9 @@ namespace IDEK.Tools.ShocktroopUtils.Services
                 TryRegister<T>(newComponentService);
                 return true;
             }
-
+#endif
             newComponentService = default;
             return false;
-#else
-            return false;
-#endif
         }
     }
 }
