@@ -534,5 +534,51 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 
             return default;
         }
+
+        
+        #region Retrieval and Querying
+        
+        /// <summary>
+        /// Returns all registered services. Does not resolve anything,
+        /// and does not include bindings.
+        /// </summary>
+        /// <returns></returns>
+        public static IEnumerable<object> GetAllRegistered() => Services.Values;
+
+        /// <summary>
+        /// Returns all registered service types.
+        /// Does not resolve anything, and does not include bindings.
+        /// </summary>
+        /// <remarks>
+        /// Reminder that these are the types the services were REGISTERED as,
+        /// not the runtime types they currently resolve to.
+        /// </remarks>
+        public static IEnumerable<Type> GetAllRegisteredTypes() => Services.Keys;
+
+        public static IEnumerable<Type> GetAllBoundTypes() =>
+            Jumpstarters.Keys.Concat(AsyncJumpstarters.Keys);
+
+        public static IEnumerable<Type> GetAllBoundSyncTypes() => Jumpstarters.Keys;
+        public static IEnumerable<Type> GetAllBoundAsyncTypes() => AsyncJumpstarters.Keys;
+
+        public static IEnumerable<Func<object>> GetAllBoundSyncJumpstarters() =>
+            Jumpstarters.Values;
+
+        public static IEnumerable<Func<Task<object>>> GetAllBoundAsyncJumpstarters() =>
+            AsyncJumpstarters.Values;
+
+        /// <returns>True if there is synchronous provider logic bound to this type.</returns>
+        public static bool IsBoundSync<T>() => Jumpstarters.ContainsKey(typeof(T));
+
+        /// <returns>True if there is asynchronous provider logic bound to this type.</returns>
+        public static bool IsBoundAsync<T>() => AsyncJumpstarters.ContainsKey(typeof(T));
+
+        /// <returns>
+        /// True if there is provider logic (be it async or not)
+        /// bound to this type.
+        /// </returns>
+        public static bool IsBound<T>() => IsBoundSync<T>() || IsBoundAsync<T>();
+        
+        #endregion
     }
 }
