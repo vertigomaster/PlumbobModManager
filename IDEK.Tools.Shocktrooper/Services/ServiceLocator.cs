@@ -99,12 +99,12 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// overkill for engines like Unity, where service components can be
         /// pre-spawned in the scene, but quite useful in other .NET environments
         /// </remarks>
-        public static void BindJumpstarter<TService, TProvider>() where TProvider : IServiceProvider<TService>, new()
+        public static void BindProvider<TService, TProvider>() where TProvider : IServiceProvider<TService>, new()
         {
             Jumpstarters[typeof(TService)] = () => new TProvider().Create();
         }
         
-        public static void BindAsyncJumpstarter<TService, TProvider>() where TProvider : IAsyncServiceProvider<TService>, new()
+        public static void BindAsyncProvider<TService, TProvider>() where TProvider : IAsyncServiceProvider<TService>, new()
         {
             AsyncJumpstarters[typeof(TService)] = async () => 
                 await new TProvider().CreateAsync() ?? throw new InvalidOperationException(
