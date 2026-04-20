@@ -42,7 +42,11 @@
 
 using System.Collections.Generic;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using IDEK.Tools.Logging;
 
 namespace IDEK.Tools.ShocktroopUtils.Services
@@ -74,13 +78,17 @@ namespace IDEK.Tools.ShocktroopUtils.Services
     {
         public static bool loggingEnabled = false;
         
-        private static readonly Dictionary<Type, object> Services = new();
+        private static readonly ConcurrentDictionary<Type, object> Services = new();
         
         /// <summary>
         /// dict of explicitly specified procedures for jumpstarting given services.
         /// </summary>
-        private static readonly Dictionary<Type, Func<object>> Jumpstarters = new();
-        private static readonly Dictionary<Type, Func<Task<object>>> AsyncJumpstarters = new();
+        /// <remarks>
+        /// Read/write must be protected to avoid race conditions in multithreaded contexts.
+        /// </remarks>
+        private static readonly ConcurrentDictionary<Type, Func<object>> Jumpstarters = new();
+        /// <inheritdoc cref="Jumpstarters"/>
+        private static readonly ConcurrentDictionary<Type, Func<Task<object>>> AsyncJumpstarters = new();
         
         /// <summary>
         /// Binds the given provider to the output type
