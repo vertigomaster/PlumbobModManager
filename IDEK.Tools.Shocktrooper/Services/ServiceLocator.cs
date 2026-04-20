@@ -40,6 +40,7 @@
 * Added rudimentary Disposable pattern support 
 */
 
+#nullable enable
 using System.Collections.Generic;
 using System;
 using System.Collections.Concurrent;
@@ -90,6 +91,9 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// <inheritdoc cref="Jumpstarters"/>
         private static readonly ConcurrentDictionary<Type, Func<Task<object>>> AsyncJumpstarters = new();
         
+        private static readonly SemaphoreSlim _resolveLock = new(
+            initialCount: 1, maxCount: 1);
+
         /// <summary>
         /// Binds the given provider to the output type
         /// </summary>
@@ -321,9 +325,6 @@ namespace IDEK.Tools.ShocktroopUtils.Services
 
             return default;
         }
-
-        private static readonly SemaphoreSlim _resolveLock = new(
-            initialCount: 1, maxCount: 1);
         
         public static async Task<T?> ResolveAsync<T>(bool jumpStartIfNotFound = true)
         {
