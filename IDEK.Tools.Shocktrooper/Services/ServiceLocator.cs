@@ -99,12 +99,12 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// overkill for engines like Unity, where service components can be
         /// pre-spawned in the scene, but quite useful in other .NET environments
         /// </remarks>
-        public static void BindProvider<TService, TProvider>() where TProvider : IServiceProvider<TService>, new()
+        public static void Bind<TService, TProvider>() where TProvider : IServiceProvider<TService>, new()
         {
             Jumpstarters[typeof(TService)] = () => new TProvider().Create();
         }
         
-        public static void BindAsyncProvider<TService, TProvider>() where TProvider : IAsyncServiceProvider<TService>, new()
+        public static void BindAsync<TService, TProvider>() where TProvider : IAsyncServiceProvider<TService>, new()
         {
             AsyncJumpstarters[typeof(TService)] = async () => 
                 await new TProvider().CreateAsync() ?? throw new InvalidOperationException(
@@ -128,14 +128,14 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// overkill for engines like Unity, where service components can be
         /// pre-spawned in the scene, but quite useful in other .NET environments
         /// </remarks>
-        public static void BindProvider<TService>(Func<object> jumpstarter)
+        public static void Bind<TService>(Func<object> jumpstarter)
         {
             Jumpstarters[typeof(TService)] = jumpstarter;
             Log($"{typeof(TService)} bound.");
         }
         
         //TODO:
-        public static void BindAsyncProvider<TService>(Func<Task<object>> jumpstarter)
+        public static void BindAsync<TService>(Func<Task<object>> jumpstarter)
         {
             AsyncJumpstarters[typeof(TService)] = jumpstarter;
             Log($"{typeof(TService)} bound.");
