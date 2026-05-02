@@ -55,7 +55,7 @@ public class Mod
     /// <example>
     /// <c>"example_mod_slug/entries"</c>
     /// </example>
-    public string EntriesSubpath => Path.Combine(Slug.ToString(), "entries");
+    public string EntriesSubpath => "entries";
     
     /// <summary>
     /// The absolute path to the entries folder.
@@ -71,14 +71,12 @@ public class Mod
     /// Or on Mac:
     /// <code>"/Users/user/Documents/The Sims 4/PlumbobMM/mods/example_mod_slug/entries"</code>
     /// </example>
-    public string EntriesAbsolutePath { get {
-        var rootAbsPath = _Lib?.ModsPath ?? 
-            throw new InvalidOperationException(
-                "Null Library/Null Library mods path");
-        
-        return Path.Combine(rootAbsPath, EntriesSubpath);
-    }}
+    public string EntriesAbsolutePath => Path.Combine(AbsolutePath, EntriesSubpath);
 
+    public string AbsolutePath => Path.Combine(_Lib?.AbsolutePathModsFolder ??
+        throw new InvalidOperationException(
+            "Null Library/Null Library mods path"), Slug.ToString());
+    
     public string Name => MetadataTemplate.Name;
     
     #endregion
@@ -155,6 +153,11 @@ public class Mod
         if (Entries.Count != other.Entries.Count) return false;
         
         return Entries.SetEquals(other.Entries);
+    }
+    
+    public override string ToString()
+    {
+        return $"{Name} ({Slug}) - {Entries.Count} {(Entries.Count == 1 ? "Entry" : "Entries")}";
     }
 
     #region Equality members

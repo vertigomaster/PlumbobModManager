@@ -35,15 +35,10 @@ public record ModEntry
     private IAsyncModLibraryService _Lib => ServiceLocator.Resolve<IAsyncModLibraryService>() ??
         throw new InvalidOperationException("Null Library/Null Library root path");
 
-    public string AbsPath => Path.Combine(_Lib.ModsPath, PathWithinLibraryMods);
-
-    /// <summary>
-    /// Where, relative to the library root, this entry's files are stored.'
-    /// </summary>
-    public string PathWithinLibraryMods => Path.Combine(
-        ModConcept.EntriesSubpath,
-        ModSlug.SanitizeForSlug(ModMetadata.Version.ToString()),
-        ModSlug.SanitizeForSlug(ModMetadata.VariantString));
+    public string AbsPath => Path.Combine(ModConcept.EntriesAbsolutePath, FolderName);
+    
+    public string FolderName => ModSlug.SanitizeForSlug(ModMetadata.Version.ToString()) +
+        ModSlug.SanitizeForSlug(ModMetadata.VariantString);
 
     public string HumanReadableIdentifier => ModMetadata.Name + " " + ModMetadata.Version;
 
@@ -98,5 +93,10 @@ public record ModEntry
     public override int GetHashCode()
     {
         return HashCode.Combine(ModMetadata, ModConcept.Slug);
+    }
+    
+    public override string ToString()
+    {
+        return $"ModEntry '{HumanReadableIdentifier}'";
     }
 }
