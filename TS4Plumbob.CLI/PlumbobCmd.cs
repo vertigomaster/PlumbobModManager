@@ -10,61 +10,30 @@ public static class PlumbobCmd
     public static RootCommand BuildCommandTree()
     {
         RootCommand rootCommand = new(
-            "Plumbob Mod Manager CLI (Command Line Interface) for The Sims 4. Directly runs PMM commands.");
-
-        var testCommand = BuildTestCommands();
-        rootCommand.Subcommands.Add(testCommand);
-
-        var rigCommand = BuildRigCommands();
-        rootCommand.Subcommands.Add(rigCommand);
-
-        var modMetaCommand = BuildModCommands();
-        rootCommand.Subcommands.Add(modMetaCommand);
+            "Plumbob Mod Manager CLI (Command Line Interface) for The Sims 4. Directly runs PMM commands.")
+        {
+            Subcommands = {
+                _BuildCommands_Test(),
+                // _BuildCommands_Core(),
+                _BuildCommands_Library(),
+                _BuildCommands_Rig(),
+                _BuildCommands_Mod()
+            }
+        };
         
         return rootCommand;
     }
 
-    private static Command BuildCoreCommands()
+    [Obsolete("This is a placeholder for the future. It is not yet implemented.")]
+    private static Command _BuildCommands_Core()
     {
-        Command initLibraryCommand = new("init-library", "Initializes a mod library");
-        Option<string> libraryPath = new("--path", "-p");
-        initLibraryCommand.Add(libraryPath);
-        
-        initLibraryCommand.SetAction(parseResult =>
-        {
-            string folderPath = parseResult.GetValue(libraryPath);
-            if (string.IsNullOrEmpty(folderPath))
-            {
-                // Use a standard platform-agnostic starting directory
-                folderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            }
+        var initLibraryCommand = PlumbobCommandBuilders.BuildCommand_InitLibrary();
 
-            // // Open a folder selection dialog
-            // using var folderDialog = new FolderBrowserDialog
-            // {
-            //     Description = "Select a folder for initializing the mod library",
-            //     UseDescriptionForTitle = true,
-            //     SelectedPath = folderPath
-            // };
-            //
-            // var result = folderDialog.ShowDialog();
-            //
-            // if (result == DialogResult.OK && !string.IsNullOrEmpty(folderDialog.SelectedPath))
-            // {
-            //     PlumbobMsg.WriteUserMsg($"Selected folder: {folderDialog.SelectedPath}");
-            // }
-            // else
-            // {
-            //     PlumbobMsg.WriteUserMsg("No folder selected or operation cancelled.");
-            // }
-            
-        });
-        
-        
+
         return initLibraryCommand;
     }
 
-    private static Command BuildTestCommands()
+    private static Command _BuildCommands_Test()
     {
         Option<bool> example = new("--example", "-e");
         Option<bool> fartMode = new("--fart-mode", "-f");
@@ -90,58 +59,36 @@ public static class PlumbobCmd
         return testCommand;
     }
 
-    private static Command BuildLibraryCommands()
+    private static Command _BuildCommands_Library()
     {
-        Command libraryMetaCommand = new("library", "Commands associated with the mod library.");
-        
-        Command selectLibraryCommand = new("select", "Selects the folder to use as the mod library.");
-        selectLibraryCommand.Add(new Argument<string>("lib-path"));
-        selectLibraryCommand.SetAction(parseResult => {
-            string libPath = parseResult.GetValue<string>("lib-path") ?? string.Empty;
-            PlumbobMsg.WriteUserMsg($"Selected library path: {libPath}");
-            
-            if (string.IsNullOrWhiteSpace(libPath))
-            {
-                PlumbobMsg.WriteUserError("Library path cannot be empty or whitespace.");
-                return;
+        return new("library", "Subcommand entry associated with the mod library.") {
+            Subcommands = {
+                PlumbobCommandBuilders.BuildCommand_InitLibrary(),
+                PlumbobCommandBuilders.BuildCommand_SetLibraryPath(),
+                PlumbobCommandBuilders.BuildCommand_ListLibrary(),
+                PlumbobCommandBuilders.BuildCommand_GetLibraryPath()
             }
-            
-            var appConfig = ServiceLocator.Resolve<AppConfig>();
-            appConfig.UserSettings.ModLibraryPath = libPath;
-            appConfig.SaveToDisk();
-        });
-        
-        Command listLibraryCommand = new("list", "Lists all mods in the library.");
-        
-        libraryMetaCommand.Subcommands.Add(selectLibraryCommand);
-        libraryMetaCommand.Subcommands.Add(listLibraryCommand);
-        return libraryMetaCommand;
-    }
-    
-    private static Command BuildRigCommands()
-    {
-        Command rigMetaCommand = new("rig", "Commands associated with whole mod rigs.");
-        
-        Command createRigCommand = new("create", "Creates a rig");
-        Command selectRigCommand = new("select", "selects a rig");
-        Command deleteRigCommand = new("delete", "Deletes a rig");
-        
-        rigMetaCommand.Subcommands.Add(createRigCommand);
-        rigMetaCommand.Subcommands.Add(selectRigCommand);
-        rigMetaCommand.Subcommands.Add(deleteRigCommand);
-        return rigMetaCommand;
+        };
     }
 
-    private static Command BuildModCommands()
+    private static Command _BuildCommands_Rig()
     {
-        Command modMetaCommand = new("mod", "mod meta-command");
+        return new Command("rig", "Subcommand entry associated with whole mod rigs.") {
+            Subcommands = {
+                PlumbobCommandBuilders.BuildCommand_CreateRig(),
+                PlumbobCommandBuilders.BuildCommand_SelectRig(),
+                PlumbobCommandBuilders.BuildCommand_DeleteRig()
+            }
+        };
+    }
 
-        Command installModArchiveCommand = new("install", 
-            "installs a new mod from its archive/instructions");
-        Command addModFolderCommand = new("add", "adds a new mod folder by copying it");
+    private static Command _BuildCommands_Mod()
+    {
+        Command modMetaCommand = new("mod", "Subcommand entry associated with individual mods.");
 
-        modMetaCommand.Subcommands.Add(installModArchiveCommand);
-        modMetaCommand.Subcommands.Add(addModFolderCommand);
+        modMetaCommand.Subcommands.Add(PlumbobCommandBuilders.BuildCommand_InstallModArchive());
+        modMetaCommand.Subcommands.Add(PlumbobCommandBuilders.BuildCommand_AddModFolder());
+        
         return modMetaCommand;
     }
 }
