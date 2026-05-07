@@ -10,11 +10,8 @@ public static class PlumbobCommandBuilders
 {
     internal static Command BuildCommand_InitLibrary()
     {
-        Command initLibraryCommand = new("init", "Initializes a mod library");
         Option<string> libraryPath = new("--path", "-p");
-        initLibraryCommand.Add(libraryPath);
-        
-        initLibraryCommand.SetAction(parseResult =>
+        return Build("init", "Initializes a mod library", parseResult =>
         {
             string? folderPath = parseResult.GetValue(libraryPath);
             if (string.IsNullOrEmpty(folderPath))
@@ -42,14 +39,12 @@ public static class PlumbobCommandBuilders
             //     PlumbobMsg.WriteUserMsg("No folder selected or operation cancelled.");
             // }
             
-        });
-        return initLibraryCommand;
+        }, options: [libraryPath]);
     }
 
     internal static Command BuildCommand_GetLibraryPath()
     {
-        var cmd = new Command("get-path", "Gets the current library path.");
-        cmd.SetAction(_ =>
+        return Build("get-path", "Gets the current library path.", _ =>
         {
             var appConfig = ServiceLocator.Resolve<AppConfig>();
             if (appConfig == null)
@@ -60,16 +55,12 @@ public static class PlumbobCommandBuilders
             var libPath = appConfig.UserSettings.ModLibraryPath;
             PlumbobMsg.WriteUserMsg($"Current library path: {libPath}");
         });
-        return cmd;
     }
     
     internal static Command BuildCommand_SetLibraryPath()
     {
-        Command selectLibraryCommand = new("set-path", "Selects the folder to use as the mod library.");
         var libPathArg = new Argument<string>("lib-path");
-        selectLibraryCommand.Add(libPathArg);
-        
-        selectLibraryCommand.SetAction(parseResult => {
+        return Build("set-path", "Selects the folder to use as the mod library.", parseResult => {
             string libPath = parseResult.GetValue(libPathArg) ?? string.Empty;
             if (string.IsNullOrWhiteSpace(libPath))
             {
@@ -87,9 +78,7 @@ public static class PlumbobCommandBuilders
             }
             appConfig.UserSettings.ModLibraryPath = libPath;
             appConfig.SaveToDisk();
-        });
-        
-        return selectLibraryCommand;
+        }, arguments: [libPathArg]);
     }
     
     internal static Command Build(
@@ -107,11 +96,8 @@ public static class PlumbobCommandBuilders
 
     internal static Command BuildCommand_ListLibrary()
     {
-        var listLibraryCommand = new Command("list", "Lists all mods in the library.");
         var verboseOption = new Option<bool>("--verbose", "-v");
-        listLibraryCommand.Add(verboseOption);
-        
-        listLibraryCommand.SetAction(parseResult => {
+        return Build("list", "Lists all mods in the library.", parseResult => {
             bool verboseMode = parseResult.GetValue(verboseOption);
             if (verboseMode)
             {
@@ -149,39 +135,31 @@ public static class PlumbobCommandBuilders
             {
                 PlumbobMsg.WriteUserMsg(mod.ToString());
             }
-        });
-        
-        return listLibraryCommand;
+        }, options: [verboseOption]);
     }
 
     internal static Command BuildCommand_CreateRig()
     {
-        Command createRigCommand = new("create", "Creates a rig");
-        return createRigCommand;
+        return Build("create", "Creates a rig", _ => { });
     }
     
     internal static Command BuildCommand_DeleteRig()
     {
-        Command deleteRigCommand = new("delete", "Deletes a rig");
-        return deleteRigCommand;
+        return Build("delete", "Deletes a rig", _ => { });
     }
 
     internal static Command BuildCommand_SelectRig()
     {
-        Command selectRigCommand = new("select", "Selects a rig");
-        return selectRigCommand;
+        return Build("select", "Selects a rig", _ => { });
     }
 
     internal static Command BuildCommand_AddModFolder()
     {
-        Command addModFolderCommand = new("add", "adds a new mod folder by copying it");
-        return addModFolderCommand;
+        return Build("add", "adds a new mod folder by copying it", _ => { });
     }
 
     internal static Command BuildCommand_InstallModArchive()
     {
-        Command installModArchiveCommand = new("install", 
-            "installs a new mod from its archive/instructions");
-        return installModArchiveCommand;
+        return Build("install", "installs a new mod from its archive/instructions", _ => { });
     }
 }
