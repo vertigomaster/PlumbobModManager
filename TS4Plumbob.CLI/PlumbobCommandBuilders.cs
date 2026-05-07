@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using IDEK.Tools.ShocktroopExtensions;
 using IDEK.Tools.ShocktroopUtils.Services;
 using Plumbob.Core.Utils;
 using TS4Plumbob.Core.DataModels;
@@ -89,6 +90,19 @@ public static class PlumbobCommandBuilders
         });
         
         return selectLibraryCommand;
+    }
+    
+    internal static Command Build(
+        string commandName, string description, 
+        Action<ParseResult> commandAction, 
+        Option[]? options=null, 
+        Argument[]? arguments=null)
+    {
+        var comm = new Command(commandName, description);
+        options?.ForEach(comm.Add);
+        arguments?.ForEach(comm.Add);
+        comm.SetAction(commandAction);
+        return comm;
     }
 
     internal static Command BuildCommand_ListLibrary()
