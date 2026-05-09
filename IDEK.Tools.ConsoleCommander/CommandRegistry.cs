@@ -20,16 +20,15 @@ public static class CommandRegistry
                     BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic))
             .Select(m => new { //anon entry type for method and attribute data
                 Method = m, 
-                Attribute = m.GetCustomAttribute<CommandAttribute>()
+                CmdAttributes = m.GetCustomAttributes<CommandAttribute>()
             })
-            .Where(x => x.Attribute != null);
+            .Where(x => x.CmdAttributes.Any());
 
+        //register the method with the root command, declaratively ensuring the command hierarchy is established
+        //we already null checked the attribute
         foreach (var entry in methods)
-        {
-            //register the method with the root command, declaratively ensuring the command hierarchy is established
-            //we already null checked the attribute
-            _RegisterMethod(root, entry.Method, entry.Attribute!);
-        }
+            foreach(var attr in entry.CmdAttributes)
+                _RegisterMethod(root, entry.Method, attr!);
 
         return root;
     }
@@ -70,6 +69,8 @@ public static class CommandRegistry
         return current;
     }
 
+    private record BindableCommandSymbol(string Name, Symbol Symbol);
+
     /// <summary>
     /// Builds out the parameters for the given method--both options and arguments--based on the method signature.
     /// </summary>
@@ -78,7 +79,7 @@ public static class CommandRegistry
     private static void _BuildParameters(Command command, MethodInfo method)
     {
         var srcMethodParameters = method.GetParameters();
-        var commandParamsToBind = new List<object>();
+        var commandParamsToBind = new List<BindableCommandSymbol>();
         //tracks which letters have already been used/reserved to
         //avoid multiple options that start with the same letter(s) from conflicting.
         var reservedFlagLetters = new HashSet<char>();
@@ -97,13 +98,13 @@ public static class CommandRegistry
             {
                 Option opt = _BuildOption(p, reservedFlagLetters);
                 command.Add(opt);//registers option to the System.CommandLine.Command
-                commandParamsToBind.Add(opt); //prepares the list of parameters to bind to the method (relayed from the Command)
+                commandParamsToBind.Add(new(p.Name, opt)); //prepares the list of parameters to bind to the method (relayed from the Command)
             }
             else
             {
                 Argument arg = _BuildArgument(p);
                 command.Add(arg);
-                commandParamsToBind.Add(arg);
+                commandParamsToBind.Add(new(p.Name, arg));
             }
         }
         
@@ -141,7 +142,7 @@ public static class CommandRegistry
         string[] aliases = _BuildAliases(parameterInfo.Name!, reservedFlagLetters);
         
         //mimics new Option<T>(string name, params string[] aliases)
-        return Activator.CreateInstance(optionType, parameterInfo.Name, aliases) as Option ?? 
+        return Activator.CreateInstance(optionType, aliases) as Option ?? 
             throw new InvalidOperationException($"Activator failed to create an Option<{paramType.Name}> " +
                 $"with parameter name '{parameterInfo.Name}' and aliases '{string.Join(", ", aliases)}'");
     }
@@ -181,56 +182,76 @@ public static class CommandRegistry
         return aliases.ToArray();
     }
 
-    private static void _BindHandler(Command command, MethodInfo method, List<object> commandParamsToBind)
+    private static void _BindHandler(
+        Command command,
+        MethodInfo method,
+        List<BindableCommandSymbol> commandParamsToBind)
     {
         command.SetAction(parseResult =>
         {
-            var finalArgsList = new List<object?>(commandParamsToBind.Count);
-            
-            //going in method param order to ensure the correct order of parameters.
-            foreach (ParameterInfo param in method.GetParameters())
-            {
-                if (param.ParameterType == typeof(ParseResult))
-                {
-                    finalArgsList.Add(parseResult);
-                    continue;   
-                }
+            List<object?> finalOrderedArgsList = _BuildCommandActionOrderedArgsList(
+                command, method, commandParamsToBind, parseResult);
 
-                var matchingCommandParam = commandParamsToBind.FirstOrDefault(s =>
-                {
-                    //sneaky dynamic cast to try and get the name of the parameter
-                    //if it fails, then it's not a match anyway.
-                    dynamic dyn = s;
-                    return dyn.Name == param.Name;
-                }) ?? throw new InvalidOperationException(
-                    $"Could not find a parameter with name '{param.Name}' in the command. " +
-                    $"There is likely a mismatch between the command '{command.Name}' and " +
-                    $"the method signature '{method.Name}({method.ParamsToString()})'.");
-                
-                //have to do a search for first due to method overloads
-                var getValueMethod = typeof(ParseResult)
-                    .GetMethods()
-                    .FirstOrDefault(m => m is {
-                        Name: nameof(ParseResult.GetValue), 
-                        IsGenericMethod: true
-                    }) ?? throw new InvalidOperationException(
-                        $"Could not find generic method " +
-                        $"'{nameof(ParseResult.GetValue)}<{typeof(ParseResult).Name}>()'. " +
-                        $"Did the API change?");
-
-                //this part ensures the correct type is passed to the method.
-                dynamic matchingCommandParam_dynamicCast = matchingCommandParam;
-                
-                //dynamically evaluate parseResult.GetValue<ParameterType>(matchingCommandParam)
-                var argValue = getValueMethod
-                    .MakeGenericMethod(param.ParameterType)
-                    .Invoke(parseResult, new object[] { matchingCommandParam_dynamicCast });
-                
-                finalArgsList.Add(argValue);
-            }
-            
             //static, so null object
-            method.Invoke(null, finalArgsList.ToArray());
+            method.Invoke(null, finalOrderedArgsList.ToArray());
         });
+    }
+
+    private static List<object?> _BuildCommandActionOrderedArgsList(
+        Command command,
+        MethodInfo method,
+        List<BindableCommandSymbol> commandParamsToBind,
+        ParseResult parseResult)
+    {
+        List<object?> finalOrderedArgsList = new List<object?>(commandParamsToBind.Count);
+
+        //going in method param order to ensure the correct order of parameters.
+        foreach (ParameterInfo param in method.GetParameters())
+        {
+            if (param.ParameterType == typeof(ParseResult))
+            {
+                finalOrderedArgsList.Add(parseResult);
+                continue;   
+            }
+
+            Symbol matchingCommandParam = commandParamsToBind
+                .FirstOrDefault(bindable => bindable.Name == param.Name)
+                ?.Symbol ?? throw new InvalidOperationException(
+                $"Could not find a parameter with name '{param.Name}' in the command. " +
+                $"There is likely a mismatch between the command '{command.Name}' and " +
+                $"the method signature '{method.Name}({method.ParamsToString()})'.");
+                
+            //example: Option<bool>, Argument<string> - the runtime type
+            Type symbolType = matchingCommandParam.GetType();
+                
+            //have to do a search for first due to method overloads
+            //Problem: there are two generic ParseResult.GetValue<T>() overloads -
+            //one for Option<T> and one for Argument<T> 
+            var getValueMethod = typeof(ParseResult)
+                .GetMethods()
+                .FirstOrDefault(m => {
+                        if (m.Name != nameof(ParseResult.GetValue)) return false; 
+                        var parameters = m.GetParameters();
+                        if(parameters.Length != 1) return false;
+                        if(!parameters[0].ParameterType.IsGenericType) return false;
+                        //make sure the types of the method's arg and our symbol
+                        //come from the same generic type def (i.e. Option<> vs Argument<>)
+                        return parameters[0].ParameterType.GetGenericTypeDefinition() ==
+                            symbolType.GetGenericTypeDefinition();
+                    }
+                ) ?? throw new InvalidOperationException(
+                    $"Could not find generic method " +
+                    $"'{nameof(ParseResult.GetValue)}<{typeof(ParseResult).Name}>()'. " +
+                    $"Did the API change?");
+            
+            //dynamically build and evaluate parseResult.GetValue<ParameterType>(matchingCommandParam)
+            var argValue = getValueMethod
+                .MakeGenericMethod(param.ParameterType)
+                .Invoke(parseResult, [matchingCommandParam]);
+                
+            finalOrderedArgsList.Add(argValue);
+        }
+
+        return finalOrderedArgsList;
     }
 }
