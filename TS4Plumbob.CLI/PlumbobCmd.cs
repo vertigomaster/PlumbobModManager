@@ -1,4 +1,6 @@
 ﻿using System.CommandLine;
+using System.Reflection;
+using IDEK.Tools.ConsoleCommander;
 using IDEK.Tools.ShocktroopUtils.Services;
 using Plumbob.Core.Utils;
 using TS4Plumbob.Core.DataModels;
@@ -9,6 +11,20 @@ public static class PlumbobCmd
 {
     public static RootCommand BuildCommandTree()
     {
+        var r = CommandRegistry.Build(Assembly.GetEntryAssembly()!);
+        r.Description = "Plumbob Mod Manager CLI (Command Line Interface) " +
+            "for The Sims 4. Directly runs PMM commands.";
+        return r;
+    }
+}
+
+[Obsolete("Deprecated; now using ConsoleCommander.CommandRegistry")]
+public static class PlumbobCmd_Old
+{
+    public static RootCommand BuildCommandTree()
+    {
+        return CommandRegistry.Build(Assembly.GetEntryAssembly()!);
+        
         RootCommand rootCommand = new(
             "Plumbob Mod Manager CLI (Command Line Interface) for The Sims 4. Directly runs PMM commands.")
         {

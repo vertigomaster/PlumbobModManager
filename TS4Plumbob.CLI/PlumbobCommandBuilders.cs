@@ -8,6 +8,7 @@ namespace Plumbob.CLI;
 
 public static class PlumbobCommandBuilders
 {
+    [Obsolete("Migrated to Attribute based pattern (also nothing really to init")]
     internal static Command BuildCommand_InitLibrary()
     {
         Option<string> libraryPath = new("--path", "-p");
@@ -19,29 +20,10 @@ public static class PlumbobCommandBuilders
                 // Use a standard platform-agnostic starting directory
                 folderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             }
-
-            // // Open a folder selection dialog
-            // using var folderDialog = new FolderBrowserDialog
-            // {
-            //     Description = "Select a folder for initializing the mod library",
-            //     UseDescriptionForTitle = true,
-            //     SelectedPath = folderPath
-            // };
-            //
-            // var result = folderDialog.ShowDialog();
-            //
-            // if (result == DialogResult.OK && !string.IsNullOrEmpty(folderDialog.SelectedPath))
-            // {
-            //     PlumbobMsg.WriteUserMsg($"Selected folder: {folderDialog.SelectedPath}");
-            // }
-            // else
-            // {
-            //     PlumbobMsg.WriteUserMsg("No folder selected or operation cancelled.");
-            // }
-            
         }, options: [libraryPath]);
     }
 
+    [Obsolete("Migrated to Attribute based pattern")]
     internal static Command BuildCommand_GetLibraryPath()
     {
         return Build("get-path", "Gets the current library path.", _ =>
@@ -56,7 +38,8 @@ public static class PlumbobCommandBuilders
             PlumbobMsg.WriteUserMsg($"Current library path: {libPath}");
         });
     }
-    
+
+    [Obsolete("Migrated to Attribute based pattern")]
     internal static Command BuildCommand_SetLibraryPath()
     {
         var libPathArg = new Argument<string>("lib-path");
@@ -94,6 +77,7 @@ public static class PlumbobCommandBuilders
         return comm;
     }
 
+    [Obsolete("Migrated to Attribute based pattern")]
     internal static Command BuildCommand_ListLibrary()
     {
         var verboseOption = new Option<bool>("--verbose", "-v");

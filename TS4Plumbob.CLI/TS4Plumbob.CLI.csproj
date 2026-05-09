@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\IDEK.Tools.ConsoleCommander\IDEK.Tools.ConsoleCommander.csproj" />
       <ProjectReference Include="..\TS4Plumbob.Core\TS4Plumbob.Core.csproj" />
     </ItemGroup>
 
