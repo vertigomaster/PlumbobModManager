@@ -100,14 +100,11 @@ public static class PlumbobCommandBuilders
         return Build("list", "Lists all mods in the library.", parseResult => {
             bool verboseMode = parseResult.GetValue(verboseOption);
             if (verboseMode)
-            {
                 PlumbobMsg.WriteUserMsg("Verbose mode enabled for listing mods.");
-            }
             
             var libReadTask = ServiceLocator.ResolveAsync<IAsyncModLibraryService>();
 
             int loadingAnimFrame = 0; //goes up to 3 then resets to 0 for: / - \ |
-            string loadingFrames = "/-\\|";
             while (!libReadTask.IsCompleted)
             {
                 PlumbobMsg.DrawASCIILoadingSpinner("Loading library...", loadingAnimFrame++);
@@ -126,8 +123,9 @@ public static class PlumbobCommandBuilders
                 PlumbobMsg.WriteDebugError("Library loading task completed successfully but result is null.");
                 return;
             }
-            
-            PlumbobMsg.WriteUserMsg("Library loaded successfully.");
+
+            if (verboseMode)
+                PlumbobMsg.WriteUserMsg("Library loaded successfully.");
             
             var mods = libReadTask.Result.GetAllMods().ToList();
             PlumbobMsg.WriteUserMsg($"Mods in Library ({mods.Count}):");
