@@ -81,7 +81,7 @@ public partial class PlumbobKernel()
     private void _BindCoreServices()
     {
         PlumbobMsg.WriteDebugInfo("Binding Core Services...");
-        ServiceLocator.BindProvider<AppConfig>(() => {
+        ServiceLocator.Bind<AppConfig>(() => {
             AppConfig newService = AppConfig.LoadFromDisk() ?? new AppConfig();
 
             coreLifetimeTrove.AddCleanup(nameof(AppConfig), () => {
@@ -94,7 +94,7 @@ public partial class PlumbobKernel()
             return newService;
         });
         
-        ServiceLocator.BindAsyncProvider<IAsyncModLibraryService>(async () => {
+        ServiceLocator.BindAsync<IAsyncModLibraryService>(async () => {
             var newService = await JsonMonolithAsyncModLibraryService.LoadFromFileAsync() ?? 
                 new JsonMonolithAsyncModLibraryService();
 
