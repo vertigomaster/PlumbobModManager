@@ -39,11 +39,11 @@ public record ModSlug
     /// </summary>
     /// <param name="str"></param>
     /// <returns></returns>
-    public static string SanitizeForSlug(string str)
+    public static string SanitizeForSlug(string str, char invalidCharReplacement='_')
     {
         //TS4 has a much easier time parsing underscores. 
         return System.Text.RegularExpressions.Regex
-            .Replace(str, @"[.\-\s\t\r\n\u00A0\u2000-\u200B\u202F\u205F\u3000]", "_").ToLowerInvariant();
+            .Replace(str, @"[.\-\s\t\r\n\u00A0\u2000-\u200B\u202F\u205F\u3000]", invalidCharReplacement.ToString()).ToLowerInvariant();
     }
 
     // public static implicit operator string(ModSlug modSlug) => modSlug.ToString();
