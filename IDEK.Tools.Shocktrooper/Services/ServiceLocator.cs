@@ -178,6 +178,23 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             Log($"{typeof(TService)} bound.");
         }
 
+        [Obsolete("Register<T>() is being deprecated in favor of TryRegister<T>(), which outputs feedback about the registration attempt." +
+            "\n\nThe definition of a 'successful' registration is a bit subjective and not always guaranteed." +
+            "\n\nHaving Register<T>() silently fail by swallowing errors with null output is a nightmare in multithreaded workflows, and still generally discouraged even for single-threaded cases." +
+            "\n\nIt's unwise, and will no longer be supported.")]
+        public static TService? Register<TService>(object serviceInstance) where TService : class
+        {
+            if (serviceInstance == null) throw new ArgumentNullException(nameof(serviceInstance));
+
+            var result = TryRegister<TService>(serviceInstance);
+            
+            if (result != RegistrationResult.Success)
+                throw new InvalidOperationException(
+                    $"Service {typeof(TService).FullName} registration failed: {result}");
+            
+            return serviceInstance as TService;
+        }
+
         /// <summary>
         /// You need to register the service before it can be Resolved or accessed. You can only register one instance of one type.
         /// </summary>
@@ -195,11 +212,11 @@ namespace IDEK.Tools.ShocktroopUtils.Services
         /// An interface will be easier to set up,
         /// but if you don't have direct edit access to the service class source, a wrapper is the next best thing.
         /// </remarks>
-        private static RegistrationResult TryRegister<TService>(
+        public static RegistrationResult TryRegister<TService>(
             object serviceInstance) =>
             TryRegister(typeof(TService), serviceInstance);
-        
-        private static RegistrationResult TryRegister(
+
+        public static RegistrationResult TryRegister(
             Type type,
             object serviceInstance)
         {

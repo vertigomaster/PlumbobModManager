@@ -75,9 +75,9 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             string testFile = "test.json";
             string testDir = BASE_DIR;
             string testpath = Path.Combine(testDir, testFile);
-            
-            var lib = new JsonMonolithModLibraryService();
-            IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+
+            IModLibraryService lib = new JsonMonolithModLibraryService();
+            var result = ServiceLocator.TryRegister<IModLibraryService>(lib);
             
             //test
             await lib.SaveToFileAsync(testpath);
@@ -85,6 +85,9 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             var savedFile = await File.ReadAllTextAsync(testpath);
             string serializedLib = await lib.SerializeAsync();
             Assert.Multiple(() => {
+                Assert.That(result, Is.EqualTo(
+                        ServiceLocator.RegistrationResult.Success), 
+                    "Registration should succeed");
                 Assert.That(savedFile, Is.Not.Null, 
                     "Saved file should not be null");
                 Assert.That(savedFile, Is.Not.Empty, 
