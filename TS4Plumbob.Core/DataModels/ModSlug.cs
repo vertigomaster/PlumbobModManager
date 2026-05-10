@@ -28,9 +28,12 @@ public record ModSlug
         Offset = offset;
     }
 
-    public ModSlug BumpCopy()
+    public ModSlug BumpCopy(int bumpSize = 1)
     {
-        return this with { Offset = Offset + 1 };
+        if(bumpSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(bumpSize), "Bump size must be positive. Negative bumps can easily cause collisions.");
+        
+        return this with { Offset = Offset + bumpSize };
     }
 
     /// <summary>
@@ -43,7 +46,7 @@ public record ModSlug
     {
         //TS4 has a much easier time parsing underscores. 
         return System.Text.RegularExpressions.Regex
-            .Replace(str, @"[.\-\s\t\r\n\u00A0\u2000-\u200B\u202F\u205F\u3000]", "_").ToLowerInvariant();
+            .Replace(str, @"[.\-\s\t\r\n\u00A0\u2000-\u200B\u202F\u205F\u3000<>:""/\\|?*!@#$%^&:]", "_").ToLowerInvariant();
     }
 
     // public static implicit operator string(ModSlug modSlug) => modSlug.ToString();
