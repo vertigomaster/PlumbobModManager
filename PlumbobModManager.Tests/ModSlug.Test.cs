@@ -75,4 +75,20 @@ public class ModSlug_Test : AbstractPlumbobTest
         Assert.Throws<ArgumentOutOfRangeException>(() => initialSlug.BumpCopy(-1), 
             "Offset should not be allowed to be negative");
     }
+    
+    [Test]
+    public void BumpCopy_DisallowZeroOffset()
+    {
+        var initialSlug = new ModSlug("test_slug", 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => initialSlug.BumpCopy(0), 
+            "Bump by 0 should not be allowed - that does not actually bump the slug and can lead to duplicate slugs");
+    }
+
+    [Test]
+    public void Unknown_CorrectlyConstructProperty()
+    {
+        Assert.That(ModSlug.Unknown, Is.Not.Null, "ModSlug.Unknown property should not evaluate to null");
+        Assert.That(ModSlug.Unknown.MainId, Is.EqualTo("unknown"), "MainId should be 'unknown'");
+        Assert.That(ModSlug.Unknown.Offset, Is.EqualTo(0), "Offset should be 0");
+    }
 }

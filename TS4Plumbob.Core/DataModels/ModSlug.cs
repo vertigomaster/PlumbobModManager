@@ -30,10 +30,19 @@ public record ModSlug
 
     public ModSlug BumpCopy(int bumpSize = 1)
     {
-        if(bumpSize <= 0)
-            throw new ArgumentOutOfRangeException(nameof(bumpSize), "Bump size must be positive. Negative bumps can easily cause collisions.");
+        if (bumpSize > 0) 
+            return this with { Offset = Offset + bumpSize };
         
-        return this with { Offset = Offset + bumpSize };
+        if(bumpSize == 0)
+            throw new ArgumentOutOfRangeException(nameof(bumpSize),
+                "Bump by 0 is not allowed - it does not actually " +
+                "bump the offset and can deceptively lead to " +
+                "duplicate slugs.");
+            
+        throw new ArgumentOutOfRangeException(nameof(bumpSize),
+            "Bump size must be positive. Negative bumps can " +
+            "easily cause collisions.");
+
     }
 
     /// <summary>
