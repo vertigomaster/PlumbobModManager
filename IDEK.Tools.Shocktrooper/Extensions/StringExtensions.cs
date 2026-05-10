@@ -58,6 +58,37 @@ namespace IDEK.Tools.ShocktroopExtensions
             return System.Text.RegularExpressions.Regex.Replace(input, "([A-Z])", " $1", System.Text.RegularExpressions.RegexOptions.Compiled).Trim();
         }
 
+        /// <summary>
+        /// Converts a string to kebab-case (all lower case, capitals act as word separators, word separators replaced with -
+        /// </summary>
+        /// <param name="str">Input string</param>
+        /// <example><code>
+        /// MyExampleString -> my-example-string
+        /// MyExampleString123 -> my-example-string123
+        /// My Example String -> my-example-string
+        /// My Friend CatDog -> my-friend-cat-dog
+        /// </code></example>
+        public static string ToKebabCase(this string str)
+        {
+            if (string.IsNullOrEmpty(str)) return str;
+            if (str.Length == 1) return str.ToLower();
+
+            StringBuilder sb = new StringBuilder(str.Length);
+
+            sb.Append(char.ToLower(str[0])); //first char has its own rule
+            for (int i = 1; i < str.Length; i++)
+            {
+                if (char.IsWhiteSpace(str[i]))
+                    sb.Append('-');
+                else if (char.IsUpper(str[i]))
+                    sb.Append('-').Append(char.ToLower(str[i]));
+                else
+                    sb.Append(str[i]);
+            }
+
+            return sb.ToString();
+        }
+
         public static string NullIfEmpty(this string s)
         {
             if(s == string.Empty)

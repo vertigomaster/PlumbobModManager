@@ -2,7 +2,7 @@
 
 namespace TS4Plumbob.Core.DataModels;
 
-public interface IModLibraryService : IService
+public interface IAsyncModLibraryService : IService
 {
     Task<string> SerializeAsync();
     
@@ -12,7 +12,7 @@ public interface IModLibraryService : IService
     bool TryAddMod(Mod mod, bool trySilently = false);
     bool TryRemoveMod(Mod mod, bool trySilently = false);
     bool IsValidMod(Mod? mod);
-    ModLibraryValidationResult ValidateLibrary();
+    ModLibraryValidationResult ValidateLibrary(bool verboseLogging=false);
     
     ModRig? ActiveRig { get; }
     
@@ -22,7 +22,7 @@ public interface IModLibraryService : IService
     /// <summary>
     /// The root path of the library. Not necessarily the root of all mod folders.
     /// There's other data that makes up a library, like rigs, author profiles, and configs.
-    /// For the root where all mod folders are located under, see <see cref="ModsPath"/>.    
+    /// For the root where all mod folders are located under, see <see cref="AbsolutePathModsFolder"/>.    
     /// </summary>
     /// <example>
     /// <code>"D:\Modding\The Sims 4\PlumbobMM"</code>
@@ -36,7 +36,7 @@ public interface IModLibraryService : IService
     /// <example>
     /// <code>"D:\Modding\The Sims 4\PlumbobMM\mods"</code>
     /// </example>
-    string ModsPath => Path.Combine(RootPath, "mods");
+    string AbsolutePathModsFolder => Path.Combine(RootPath, "mods");
     
     /// <summary>
     /// The list of all profiles in the library. 
@@ -49,4 +49,6 @@ public interface IModLibraryService : IService
     // Task CopyDirectorySubtreeIntoModEntryDirAsync(Uri subtreeUri, ModEntry thisEntry);
     // void CopyDirectorySubtreeIntoModEntry(string subtreePath, ModEntry thisEntry);
     Task CopyFolderIntoModEntryAsync(string subtreePath, ModEntry thisEntry);
+    
+    IEnumerable<Mod> GetAllMods();
 }

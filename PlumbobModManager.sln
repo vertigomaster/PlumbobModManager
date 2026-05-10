@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IDEK.Tools.Trove", "IDEK.To
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS4Plumbob.Avalonia", "TS4Plumbob.Avalonia\TS4Plumbob.Avalonia.csproj", "{C80652A2-B5BE-408C-80F5-9EA569ACC28D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IDEK.Tools.ConsoleCommander", "IDEK.Tools.ConsoleCommander\IDEK.Tools.ConsoleCommander.csproj", "{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -122,6 +124,18 @@ Global
 		{C80652A2-B5BE-408C-80F5-9EA569ACC28D}.Release|x64.Build.0 = Release|Any CPU
 		{C80652A2-B5BE-408C-80F5-9EA569ACC28D}.Release|x86.ActiveCfg = Release|Any CPU
 		{C80652A2-B5BE-408C-80F5-9EA569ACC28D}.Release|x86.Build.0 = Release|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Debug|x64.Build.0 = Debug|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Debug|x86.Build.0 = Debug|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Release|x64.ActiveCfg = Release|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Release|x64.Build.0 = Release|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Release|x86.ActiveCfg = Release|Any CPU
+		{1A7D7EA8-45D3-449D-AA37-EC9FA5D14AB1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

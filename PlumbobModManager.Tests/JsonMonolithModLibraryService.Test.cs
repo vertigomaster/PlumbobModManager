@@ -51,8 +51,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
         [Test]
         public void LibInit_Test()
         {
-            var lib = new JsonMonolithModLibraryService();
-            IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+            var lib = new JsonMonolithAsyncModLibraryService();
+            IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
             
             Assert.That(lib, Is.Not.Null, 
                 "Library should be created successfully");
@@ -76,8 +76,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             string testDir = BASE_DIR;
             string testpath = Path.Combine(testDir, testFile);
 
-            IModLibraryService lib = new JsonMonolithModLibraryService();
-            var result = ServiceLocator.TryRegister<IModLibraryService>(lib);
+            IAsyncModLibraryService lib = new JsonMonolithAsyncModLibraryService();
+            var result = ServiceLocator.TryRegister<IAsyncModLibraryService>(lib);
             
             //test
             await lib.SaveToFileAsync(testpath);
@@ -127,8 +127,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             
             await File.WriteAllTextAsync(testpath, "TEST_STRING");
 
-            var lib = new JsonMonolithModLibraryService();
-            IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+            var lib = new JsonMonolithAsyncModLibraryService();
+            IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
             await lib.SaveToFileAsync(testpath);
 
             var savedFileText = await File.ReadAllTextAsync(testpath);
@@ -174,15 +174,15 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
         [Test]
         public void RegisterService_Test()
         {
-            var lib = new JsonMonolithModLibraryService();
+            var lib = new JsonMonolithAsyncModLibraryService();
             Assert.That(lib, Is.Not.Null,
                 "library should not be null after creation");
             Console.WriteLine("registering lib " + lib);
-            IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+            IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
 
             Assert.That(result, Is.Not.Null, 
-                $"The {nameof(JsonMonolithModLibraryService)} should " +
-                $"be registerable as a {nameof(IModLibraryService)}. " +
+                $"The {nameof(JsonMonolithAsyncModLibraryService)} should " +
+                $"be registerable as a {nameof(IAsyncModLibraryService)}. " +
                 $"Make sure it is a valid type for this.");
             Assert.That(result, Is.EqualTo(lib), 
                 "A successful service registration should return the " +
@@ -190,14 +190,14 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             
             Console.WriteLine("registered lib " + lib);
             
-            var serviceLib = ServiceLocator.Resolve<IModLibraryService>();
+            var serviceLib = ServiceLocator.Resolve<IAsyncModLibraryService>();
 
             Assert.That(lib, Is.Not.Null,
                 "library should not be null after registration");
             Assert.That(serviceLib, Is.Not.Null,
                 $"ServiceLocator should resolve the registered service " +
                 $"from the type it was registered with " +
-                $"({nameof(IModLibraryService)} in this case.)");
+                $"({nameof(IAsyncModLibraryService)} in this case.)");
             Assert.That(serviceLib, Is.EqualTo(lib),
                 "ServiceLocator should resolve the registered service " +
                 "to the same instance");
@@ -221,9 +221,9 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 "The sole initial rig in an empty but registered library " +
                 "should be the active rig.");
             
-            ServiceLocator.TryUnregister<IModLibraryService>(serviceLib);
+            ServiceLocator.TryUnregister<IAsyncModLibraryService>(serviceLib);
             
-            Assert.That(ServiceLocator.Resolve<IModLibraryService>(), Is.Null,
+            Assert.That(ServiceLocator.Resolve<IAsyncModLibraryService>(), Is.Null,
                 "ServiceLocator should not be able to resolve the " +
                 "unregistered service when there is no bound jumpstarter.");
             
@@ -231,9 +231,9 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 "An unregistered library service should not clear its " +
                 "ActiveRig when deregistered.");
 
-            ServiceLocator.Register<IModLibraryService>(lib);
+            ServiceLocator.Register<IAsyncModLibraryService>(lib);
              
-            var serviceLib2 = ServiceLocator.Resolve<IModLibraryService>();
+            var serviceLib2 = ServiceLocator.Resolve<IAsyncModLibraryService>();
             
             Assert.That(serviceLib2, Is.Not.Null,
                 "ServiceLocator should resolve the registered service");
@@ -278,8 +278,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                 "Test file path should be valid");
             
             //create the lib
-            var lib = new JsonMonolithModLibraryService();
-            IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+            var lib = new JsonMonolithAsyncModLibraryService();
+            IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
             
             //create a Mod and a ModEntry that point to each other
             ModEntry entry = _testMod.AddNewEntry(new Version(1, 0), "fake");
@@ -292,7 +292,7 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             Console.WriteLine("[DEBUG_LOG] Saved Circular JSON: " + savedJson);
             
             //read it back
-            var reloadedLib = await JsonMonolithModLibraryService.DeserializeAsync(savedJson);
+            var reloadedLib = await JsonMonolithAsyncModLibraryService.DeserializeAsync(savedJson);
             reloadedLib?.InitializeFromSerializedData();
             
             Assert.That(reloadedLib, Is.Not.Null, "Reloaded library should not be null");
@@ -314,8 +314,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             await File.WriteAllTextAsync(testpath, "TEST_STRING");
             
             //create the lib
-            var lib = new JsonMonolithModLibraryService();
-            IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+            var lib = new JsonMonolithAsyncModLibraryService();
+            IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
             
             //add a test mod to it
             
@@ -329,7 +329,7 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
             await lib.SaveToFileAsync(testpath);       
             
             //read it back in
-            var reloadedLib = await JsonMonolithModLibraryService.DeserializeAsync(
+            var reloadedLib = await JsonMonolithAsyncModLibraryService.DeserializeAsync(
                 await File.ReadAllTextAsync(testpath));
             reloadedLib?.InitializeFromSerializedData();
             
@@ -412,8 +412,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                     "Test mod directory should exist");
 
                 //create the lib
-                var lib = new JsonMonolithModLibraryService();
-                IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+                var lib = new JsonMonolithAsyncModLibraryService();
+                IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
                  
                 Assert.That(lib.ActiveRig, Is.Not.Null,
                     "ActiveRig should not be null after " +
@@ -451,8 +451,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
                     "Test mod directory should exist");
 
                 //create the lib
-                var lib = new JsonMonolithModLibraryService();
-                IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+                var lib = new JsonMonolithAsyncModLibraryService();
+                IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
                 
                 Assert.That(lib.ActiveRig, Is.Not.Null,
                     "ActiveRig should not be null " +
@@ -521,8 +521,8 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
         public void GetVisibleMods_CountTest()
         {
             //create the lib
-            var lib = new JsonMonolithModLibraryService();
-            IModLibraryService? result = ServiceLocator.Register<IModLibraryService>(lib);
+            var lib = new JsonMonolithAsyncModLibraryService();
+            IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
             // lib.OnRegister(lib.GetType());
             Assert.That(lib.ActiveRig, Is.Not.Null, 
                 "ActiveRig should not be null after adding a mod");

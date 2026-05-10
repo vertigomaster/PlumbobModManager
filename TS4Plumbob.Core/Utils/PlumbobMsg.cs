@@ -1,4 +1,5 @@
-﻿using IDEK.Tools.Logging;
+﻿using System.Diagnostics;
+using IDEK.Tools.Logging;
 
 namespace Plumbob.Core.Utils;
 
@@ -11,6 +12,11 @@ public static class PlumbobMsg
     public static void WriteUserError(string message)
     {
         ConsoleLog.LogError(message);
+    }
+
+    public static void WriteDebugError(string message)
+    {
+        Debug.WriteLine("[Debug Error Context]: " + message);
     }
 
     /// <summary>
@@ -47,5 +53,17 @@ public static class PlumbobMsg
         Console.ForegroundColor = color;
         Console.WriteLine(message);
         Console.ResetColor();
+    }
+    
+    public static void WriteUserMsg_NoLine(string message, ConsoleColor color = ConsoleColor.White)
+    {
+        Console.ForegroundColor = color;
+        Console.Write(message);
+        Console.ResetColor();
+    }
+    
+    public static void DrawASCIILoadingSpinner(string loadingMessage, int frame, string loadingFrames = "/-\\|")
+    {
+        Console.Write($"\r{loadingMessage} {loadingFrames[frame % loadingFrames.Length]}");
     }
 }

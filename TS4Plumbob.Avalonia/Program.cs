@@ -20,9 +20,11 @@ sealed class Program
         if (startCode != 0) return;
 
         //one big Bandaid so that I don't have to add a bunch of weird little
-        //async bandaids all over the place for Library property access
-        //forces the service locator to resolve this core async service
-        await ServiceLocator.ResolveAsync<IModLibraryService>();
+        //async bandaids all over the place for Library property access.
+        //
+        //forces the service locator to async resolve this core async service
+        await ServiceLocator.ResolveAsync<IAsyncModLibraryService>();
+        
         //now the service should be resolved and present fpr synchronous access
         
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

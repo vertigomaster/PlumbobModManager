@@ -9,7 +9,7 @@ namespace TS4Plumbob.Core.DataModels;
 /// The set of all mods known to Plumbob
 /// </summary>
 [Serializable]
-public class JsonMonolithModLibraryService : IModLibraryService
+public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
 {
     //scans filesystem to find them all
     
@@ -46,7 +46,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
     /// <inheritdoc />
     public IReadOnlyList<ModRig> Rigs => _rigs;
 
-    public JsonMonolithModLibraryService()
+    public JsonMonolithAsyncModLibraryService()
     {
         _serializableModList = [];
         _distinctModLut = [];
@@ -62,7 +62,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
         //is this a good idea? prob not
         // ValidateLibrary();
 
-        CreateDefaultRigIfNone();
+        _CreateDefaultRigIfNone();
     }
 
     /// <inheritdoc />
@@ -79,7 +79,16 @@ public class JsonMonolithModLibraryService : IModLibraryService
         }
     }
 
-    public static async Task<JsonMonolithModLibraryService?> LoadFromFileAsync()
+    /// <summary>
+    /// Loads a mod library from the given file and instantiates it.
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks>
+    /// Do not assume that the library is fully initialized or available via <see cref="ServiceLocator"/>.
+    /// <br/>
+    /// This method is generally used to create the instance that will then be registered to the service locator.
+    /// </remarks>
+    public static async Task<JsonMonolithAsyncModLibraryService?> LoadFromFileAsync()
     {
         string libConfigFile = ModLibraryConfigFile;
         
@@ -95,7 +104,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
         //while the deserializer does have an async overload,
         //it would require refactoring stuff into a stream, which
         //sounds like a lot of work that may not be worth it, so we're just doing this.
-        var lib = await DeserializeAsync(modLibraryString);
+        JsonMonolithAsyncModLibraryService? lib = await DeserializeAsync(modLibraryString);
         
         if(lib == null)
         {
@@ -103,27 +112,31 @@ public class JsonMonolithModLibraryService : IModLibraryService
             return null;
         }
         
+        //Unpacks the remaining derived/unserialized state from the deserialized object.
         lib.InitializeFromSerializedData();
-        
-        //this one can take a while, so we'll do it in a background thread.
-        var report = await Task.Run(lib.ValidateLibrary);
-        
-        if(report.HasErrors)
-        {
-            Debug.WriteLine("Mod library validation failed. Should re-scan.");
-            // return null;
-            //TODO: mod scan (via the crawler service?)
-        }
-
-        if (report.HasMissingMods)
-        {
-            Debug.WriteLine("Mod library is missing certain mods. Should re-scan.");
-            //TODO: mod scan (via the crawler service?)
-        }
         
         Debug.WriteLine("Mod library loaded successfully.");
         return lib;
     }
+    //
+    // public static async Task RunValidationReport(JsonMonolithAsyncModLibraryService lib)
+    // {
+    //     //this one can take a while, so we'll do it in a background thread.
+    //     var report = await Task.Run(lib.ValidateLibrary);
+    //     
+    //     if(report.HasErrors)
+    //     {
+    //         Debug.WriteLine("Mod library validation failed. Should re-scan.");
+    //         // return null;
+    //         //TODO: mod scan (via the crawler service?)
+    //     }
+    //
+    //     if (report.HasMissingMods)
+    //     {
+    //         Debug.WriteLine("Mod library is missing certain mods. Should re-scan.");
+    //         //TODO: mod scan (via the crawler service?)
+    //     }
+    // }
 
     public async Task<string> SerializeAsync() => await Task.Run(() => JsonSerializer.Serialize(this, AppConfig.LibrarySerializerOptions));
 
@@ -136,9 +149,9 @@ public class JsonMonolithModLibraryService : IModLibraryService
     /// but correctly implementing JsonSerializer.DeserializeAsync()
     /// would require a bit of refactoring and other work that may
     /// not be worth the effort (yet). </remarks>
-    public static async Task<JsonMonolithModLibraryService?> DeserializeAsync(
+    public static async Task<JsonMonolithAsyncModLibraryService?> DeserializeAsync(
         string serializedData) => await Task.Run(() =>
-            JsonSerializer.Deserialize<JsonMonolithModLibraryService>(
+            JsonSerializer.Deserialize<JsonMonolithAsyncModLibraryService>(
                 serializedData, AppConfig.LibrarySerializerOptions));
 
     //TODO: async?
@@ -210,34 +223,8 @@ public class JsonMonolithModLibraryService : IModLibraryService
             }
         );
     }
-
-
-    // public ModEntry? MaybeGetModEntry(ModEntrySlug humanReadableIdentifier)
-
-    // {
-
-    //     return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == humanReadableIdentifier);
-
-    // }
-
-
-    // public Mod? MaybeGetMod(ModEntrySlug modEntrySlug)
-
-    // {
-
-    //     return _distinctModLut.FirstOrDefault(m => m.HumanReadableIdentifier == modEntrySlug)?.ModConcept;
-
-    // }
-
-
-    // public Mod? MaybeGetMod(ModSlug modSlug)
-
-    // {
-
-    //     return _distinctModLut.FirstOrDefault(entry => entry.ModConcept.Slug == modSlug)?.ModConcept;
-
-    // }
-
+    
+    public IEnumerable<Mod> GetAllMods() => _serializableModList;
 
     public bool TryAddMod(Mod mod, bool trySilently = false)
     {
@@ -258,55 +245,6 @@ public class JsonMonolithModLibraryService : IModLibraryService
 
         return true;
     }
-
-    //just realized the use case for this makes no sense; mod entries are always created with respect to an EXISTING mod. There's no reason or way to add a mod entry without adding its mod, at which point you should just add the mod directly.
-
-    //Will remove the commented code soon.
-
-    // public bool TryAddModEntry(ModEntry modEntry)
-
-    // {
-
-    //     TryAddMod(modEntry.ModConcept, trySilently:true); //ensures the entry's mod is added to the library.
-
-    //     
-
-    //     
-
-    //     
-
-    //     //make all the checks before actually mutating state
-
-    //     if(_distinctModLut.Contains(modEntry))
-
-    //     {
-
-    //         Console.WriteLine(
-
-    //             $"Failed to add mod '{modEntry.HumanReadableIdentifier}' to the library. Duplicate entry detected.");
-
-    //         return false;
-
-    //     }
-
-    //
-
-    //     //mutate state
-
-    //     _distinctModLut.Add(modEntry);
-
-    //     _serializableModList.Add(modEntry);
-
-    //     
-
-    //     Debug.WriteLine($"Added mod '{modEntry.HumanReadableIdentifier}' to the library.");
-
-    //     Debug.WriteLine($"Mod library now contains {_serializableModList.Count} mods.");
-
-    //     return true;
-
-    // }
-
 
     public bool TryRemoveMod(Mod mod, bool trySilently = false)
     {
@@ -354,21 +292,38 @@ public class JsonMonolithModLibraryService : IModLibraryService
         // _distinctModLut.Contains(mod);
     }
 
-    public ModLibraryValidationResult ValidateLibrary()
+    public ModLibraryValidationResult ValidateLibrary(bool verboseLogging=false)
     {
         var results = new List<ModValidationResult>(_serializableModList.Count);
 
         foreach(var mod in _serializableModList)
         {
             bool valid = IsValidMod(mod);
+            if (verboseLogging && !valid)
+            {
+                Console.WriteLine($"[Validation Error] Mod '{mod.Name}' ('{mod.Slug}') is invalid!");
+            }
             foreach (var entry in mod.Entries)
             {
                 bool exists = entry.ExistsOnDisk();
+                if (verboseLogging && !exists) {
+                    Console.WriteLine($"[Validation Error] {entry} missing on disk!");
+                }
+                    
                 results.Add(new ModValidationResult(entry, valid, exists));
             }
         }
 
-        return new ModLibraryValidationResult(results.ToArray());
+        var report = new ModLibraryValidationResult(results.ToArray());
+        
+        if(verboseLogging && !report.HasIssues)
+            Console.WriteLine("Mod library is valid.");
+        if (verboseLogging && report.HasErrors)
+            Console.WriteLine("Mod library validation failed. Should re-scan.");
+        if (verboseLogging && report.HasMissingMods)
+            Console.WriteLine("Mod library is missing certain mods. Should re-scan.");
+
+        return report;
     }
 
     public IEnumerable<ModEntry> GetVisibleMods()
@@ -390,19 +345,13 @@ public class JsonMonolithModLibraryService : IModLibraryService
         Debug.WriteLine("Initializing mod library from serialized data...");
         _distinctModLut = _serializableModList.ToHashSet();
 
-        foreach (var mod in _serializableModList)
-        {
-            foreach (var entry in mod.Entries)
-            {
-                // Rebuild back-references if they are missing
-                if (entry.ModConcept == null)
-                {
-                    // This is a workaround for potential circular reference issues where System.Text.Json
-                    // might not have fully wired up the back-reference yet.
-                    // Accessing properties that use it might fail if we don't.
-                }
-            }
-        }
+        // foreach (var mod in _serializableModList)
+        // {
+        //     foreach (var entry in mod.Entries)
+        //     {
+        //
+        //     }
+        // }
 
         // Initialize rigs
         foreach (var rig in _rigs)
@@ -418,7 +367,7 @@ public class JsonMonolithModLibraryService : IModLibraryService
         Debug.WriteLine($"Mod library initialized successfully with {_serializableModList.Count} mods.");
     }
 
-    private void CreateDefaultRigIfNone()
+    private void _CreateDefaultRigIfNone()
     {
         if (_activeRig == null)
         {

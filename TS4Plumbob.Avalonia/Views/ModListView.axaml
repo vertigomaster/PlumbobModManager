@@ -53,6 +53,8 @@
                     <Border Background="Red">
                         <ScrollViewer>
                             <!-- TODO: Finish after the model's explicit ID clutter is take care of -->
+                            <!--Remember to bind to an ObservableCollection of some kind 
+                            so that it can emit events that update the view-->
                             <ItemsControl ItemsSource="{Binding VisibleMods}">
                                 <!--Defines the control's panel that will display our items-->
                                 <ItemsControl.ItemsPanel>
@@ -70,7 +72,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <!-- The DataContext of this scope is of the 
                                 type stored in the source collection.
-                                Beyond that,it's just regular display -->
+                                Beyond that,it's just a regular display -->
                                     <DataTemplate>
                                         <Border BorderBrush="Gray" BorderThickness="1"
                                                 Padding="10" CornerRadius="10">

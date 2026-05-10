@@ -94,15 +94,15 @@ public partial class PlumbobKernel()
             return newService;
         });
         
-        ServiceLocator.BindAsync<IModLibraryService>(async () => {
-            var newService = await JsonMonolithModLibraryService.LoadFromFileAsync() ?? 
-                new JsonMonolithModLibraryService();
+        ServiceLocator.BindAsync<IAsyncModLibraryService>(async () => {
+            var newService = await JsonMonolithAsyncModLibraryService.LoadFromFileAsync() ?? 
+                new JsonMonolithAsyncModLibraryService();
 
             coreLifetimeTrove.AddAsyncCleanup(
-                nameof(JsonMonolithModLibraryService), 
+                nameof(JsonMonolithAsyncModLibraryService), 
                 async () => {
                     PlumbobMsg.WriteDebugInfo("Cleaning up ModLibraryService...");
-                    ServiceLocator.TryUnregister<IModLibraryService>(newService);
+                    ServiceLocator.TryUnregister<IAsyncModLibraryService>(newService);
                     await newService.SaveToFileAsync();
                     PlumbobMsg.WriteDebugInfo("ModLibraryService Cleanup Complete.");
             });
