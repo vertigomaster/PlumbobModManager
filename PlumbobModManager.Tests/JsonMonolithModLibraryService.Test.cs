@@ -518,12 +518,13 @@ public class JsonMonolithModLibraryService_Test : AbstractPlumbobTest
         public void GetVisibleMods_CountTest()
         {
             //create the lib
-            var lib = new JsonMonolithAsyncModLibraryService();
-            IAsyncModLibraryService? result = ServiceLocator.Register<IAsyncModLibraryService>(lib);
-            // lib.OnRegister(lib.GetType());
+            IAsyncModLibraryService? lib = 
+                ServiceLocator.Register<IAsyncModLibraryService>(new JsonMonolithAsyncModLibraryService());
+            
+            Assert.That(lib, Is.Not.Null, 
+                "Library should not be null after being registered.");
             Assert.That(lib.ActiveRig, Is.Not.Null, 
                 "ActiveRig should not be null after adding a mod");
-
             Assert.That(lib.GetVisibleMods, Is.Not.Null, "Visible mods collection should be initialized");
             Assert.That(lib.GetVisibleMods().Count, Is.EqualTo(0), "Visible mods collection should be empty initially");
 
