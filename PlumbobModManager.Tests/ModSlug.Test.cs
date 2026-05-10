@@ -18,13 +18,26 @@ public class ModSlug_Test : AbstractPlumbobTest
     [Test]
     public void SanitizeForSlug_RemovalOfRiskySymbolChars()
     {
-        string input = @"This is a test string with invalid characters: <>:""/\\|?*!@#$%^&:()";
+        string input = @"This is a test string with invalid characters: <>:""/\\|?*!@#$%^&:=()";
         //20, not 21; first of the \\ sequence is an escape character.
-        string expectedOutput = "this_is_a_test_string_with_invalid_characters____________________()";
+        string expectedOutput = "this_is_a_test_string_with_invalid_characters_____________________()";
         string actualOutput = ModSlug.SanitizeForSlug(input);
 
         Assert.That(actualOutput, Is.EqualTo(expectedOutput),
             $"Invalid or risky symbol characters should be removed during slugification. Input was: \"{input}\"");
+    }
+
+    [Test]
+    public void SanitizeForSlug_AlternateReplacementCharHandling()
+    {
+        string input = "ExamplE STRing_-=";
+        //underscores are always allowed in slugs; TS4 handles them well
+        char rep = '-';
+        string expectedOutput = $"example{rep}string_{rep}{rep}"; 
+        string actualOutput = ModSlug.SanitizeForSlug(input, rep);
+
+        Assert.That(actualOutput, Is.EqualTo(expectedOutput),
+            $"Invalid or risky symbol characters should be replaced with the specified character during slugification. Input was: \"{input}\"");
     }
 
     [Test]
