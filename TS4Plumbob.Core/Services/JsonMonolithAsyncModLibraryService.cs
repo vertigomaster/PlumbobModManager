@@ -79,6 +79,8 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
         }
     }
 
+    private AppConfig Config => ServiceLocator.Resolve<AppConfig>() ?? throw new InvalidOperationException("Tried to resolve AppConfig before it was registered. " +
+        "Wait until after the core boots before utilizing its services!");
     /// <summary>
     /// Loads a mod library from the given file and instantiates it.
     /// </summary>
@@ -228,16 +230,26 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
 
     public bool TryAddMod(Mod mod, bool trySilently = false)
     {
+        if(!TryAddMod_Internal(mod, trySilently)) return false;
+        //add other reactive functionality here?
+        return true;
+    }
+
+    //Was originally pulled out from TryAddMod for other reasons.
+    //Will leave it out here for now in case we end up needing to do that again.
+    private bool TryAddMod_Internal(Mod mod, bool trySilently = false)
+    {
         if (mod == null) throw new ArgumentNullException(nameof(mod));
         //attempts to add the mod
-        if(!_distinctModLut.Add(mod))
+        if (!_distinctModLut.Add(mod))
         {
-            if(!trySilently) Console.WriteLine(
-                $"Failed to add mod '{mod.Name}' ('{mod.Slug}') to the library. Duplicate entry detected.");
-            
+            if (!trySilently)
+                Console.WriteLine(
+                    $"Failed to add mod '{mod.Name}' ('{mod.Slug}') to the library. Duplicate entry detected.");
+
             return false;
         }
-        
+
         _serializableModList.Add(mod);
 
         Debug.WriteLine($"Add mod '{mod.Name}' to the library.");

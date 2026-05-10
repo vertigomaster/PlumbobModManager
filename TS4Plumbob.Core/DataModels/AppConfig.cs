@@ -28,6 +28,15 @@ public record UserSettings
     /// </remarks>
     [JsonInclude, JsonPropertyName("rigsRootPath")]
     public string RigsRootPath { get; set; }
+
+    /// <summary>
+    /// Determines whether newly added mods should automatically be activated
+    /// and included in the currently active rig. If set to <c>true</c>,
+    /// expect newly added mods to be immediately available in the active rig;
+    /// otherwise, they must be manually activated.
+    /// </summary>
+    [JsonInclude, JsonPropertyName("autoAddNewModsToActiveRig")]
+    public bool AutoAddNewModsToActiveRig { get; set; } = true;
 }
 
 /// <summary>
