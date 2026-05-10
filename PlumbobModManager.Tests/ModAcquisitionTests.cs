@@ -1,11 +1,6 @@
 ﻿namespace PlumbobModManager.Tests;
 
-public class ModAcquisitionTests
-{
-    
-}
-
-public class RigTests
+public class ModAcquisitionTests : AbstractPlumbobTest
 {
     
 }

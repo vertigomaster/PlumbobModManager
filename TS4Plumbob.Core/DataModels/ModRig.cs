@@ -115,26 +115,26 @@ public class ModRig
     
     public bool TryAddModEntryToEnd(ModEntry mod)
     {
-        if(!_TryAddMod(mod)) return false;
+        if(!_TryAddModEntry(mod)) return false;
         _orderedInstallList.Add(mod);
         return true;
     }
 
-    public bool TryAddModToStart(ModEntry mod)
+    public bool TryAddModEntryToStart(ModEntry mod)
     {
-        if (!_TryAddMod(mod)) return false;
+        if (!_TryAddModEntry(mod)) return false;
         _orderedInstallList.Insert(0, mod);
         return true;
     }
 
-    public bool TryAddModToIndex(ModEntry mod, int index)
+    public bool TryAddModEntryToIndex(ModEntry mod, int index)
     {
-        if (!_TryAddMod(mod)) return false;
+        if (!_TryAddModEntry(mod)) return false;
         _orderedInstallList.Insert(index, mod);
         return true;
     }
 
-    public bool TryMoveModToIndex(ModEntry mod, int index)
+    public bool TryMoveModEntryToIndex(ModEntry mod, int index)
     {
         if (!_modEntryLut.Contains(mod)) return false;
         _orderedInstallList.Remove(mod);
@@ -142,15 +142,15 @@ public class ModRig
         return true;
     }
 
-    public bool TryRemoveMod(ModEntry mod)
+    public bool TryRemoveModEntry(ModEntry mod)
     {
-        if (!_TryRemoveMod(mod)) return false;
+        if (!_TryRemoveModEntry(mod)) return false;
         _orderedInstallList.Remove(mod);
         return true;
     }
 
 
-    private bool _TryAddMod(ModEntry modEntry)
+    private bool _TryAddModEntry(ModEntry modEntry)
     {
         if (!ServiceLocator.TryResolve(out IAsyncModLibraryService? lib))
             throw new InvalidOperationException("ModLibraryService not registered!");
@@ -161,7 +161,7 @@ public class ModRig
         //TODO: fire events or utilize an observer pattern?
     }
 
-    private bool _TryRemoveMod(ModEntry mod)
+    private bool _TryRemoveModEntry(ModEntry mod)
     {
         //no extra checks since it's being removed anyway
         return _modEntryLut.Remove(mod) && _modLut.Remove(mod.ModConcept);

@@ -1,4 +1,6 @@
-﻿using IDEK.Tools.ShocktroopUtils.Services;
+﻿using System.Text.Json.Serialization;
+using IDEK.Tools.ShocktroopUtils.Services;
+using Plumbob.Core.Utils;
 
 namespace TS4Plumbob.Core.DataModels;
 
@@ -31,20 +33,30 @@ public class Mod
     #endregion
     #region Core Properties
     
-    /// <summary>
-    /// Represents the template that will be used as the basis for new entries.
-    /// </summary>
-    public ModMetadata MetadataTemplate { get; init; }
-    
+    [JsonInclude]
+    [JsonPropertyName("slug")]
+    [JsonPropertyOrder(100)]
     public ModSlug Slug { get; init; }
-    
+
+    [JsonInclude]
+    [JsonPropertyName("metadataTemplate")]
+    [JsonPropertyOrder(200)]
+    public ModMetadata MetadataTemplate { get; init; }
+
+    [JsonInclude]
+    [JsonPropertyName("entries")]
+    [JsonPropertyOrder(300)]
     public HashSet<ModEntry> Entries { get; init; } = [];
     
     #endregion
     #region Service Accessors
     
-    private AppConfig? _AppConfig => ServiceLocator.Resolve<AppConfig>();
-    private IAsyncModLibraryService? _Lib => ServiceLocator.Resolve<IAsyncModLibraryService>();
+    private AppConfig _AppConfig => ServiceLocator.Resolve<AppConfig>() 
+        ?? throw new InvalidOperationException(
+            "Tried to Resolve AppConfig before core could bind it.");
+    private IAsyncModLibraryService _Lib => ServiceLocator.Resolve<IAsyncModLibraryService>() 
+        ?? throw new InvalidOperationException(
+            "Tried to Resolve IAsyncModLibraryService before core could bind it.");
     
     #endregion
     #region Computed Properties
@@ -55,6 +67,7 @@ public class Mod
     /// <example>
     /// <c>"example_mod_slug/entries"</c>
     /// </example>
+    [JsonIgnore]
     public string EntriesSubpath => "entries";
     
     /// <summary>
@@ -71,12 +84,15 @@ public class Mod
     /// Or on Mac:
     /// <code>"/Users/user/Documents/The Sims 4/PlumbobMM/mods/example_mod_slug/entries"</code>
     /// </example>
+    [JsonIgnore]
     public string EntriesAbsolutePath => Path.Combine(AbsolutePath, EntriesSubpath);
 
+    [JsonIgnore]
     public string AbsolutePath => Path.Combine(_Lib?.AbsolutePathModsFolder ??
         throw new InvalidOperationException(
             "Null Library/Null Library mods path"), Slug.ToString());
     
+    [JsonIgnore]
     public string Name => MetadataTemplate.Name;
     
     #endregion
@@ -102,6 +118,7 @@ public class Mod
         return successfulEntry;
     }
     
+    
     /// <summary>
     /// Attempts to create a new entry for a mod using the default metadata.
     /// Useful for creating the first entry more easily.
@@ -122,12 +139,39 @@ public class Mod
     /// </exception>
     public ModEntry AddNewEntry(ModMetadata newMetadata)
     {
+        var newEntry = _AddNewEntryToMod_Internal(newMetadata);
+
+        if (_AppConfig.UserSettings.AutoAddNewModsToActiveRig)
+        {
+            if(_Lib.ActiveRig == null)
+            {
+                PlumbobMsg.WriteDebugWarning(
+                    "Tried to add new mod entry to active rig but no rig is active.");
+            }
+            else
+            {
+                _Lib.ActiveRig.TryAddModEntryToEnd(newEntry);
+            }
+        }
+
+        return newEntry;
+    }
+    
+    /// <summary>
+    /// The raw internal method for creating a new entry. Does not account for behaviours associated with that addition - it only concerns the core internal operation.
+    /// </summary>
+    /// <param name="newMetadata"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    private ModEntry _AddNewEntryToMod_Internal(ModMetadata newMetadata)
+    {
         ModEntry newEntry = new(this, newMetadata);
-        
-        if(!Entries.Add(newEntry)) 
+
+        //TODO: wrap in a NonFatalPlumbobException that can be caught and handled by the front-end.
+        if (!Entries.Add(newEntry))
             throw new InvalidOperationException(
                 $"Entry '{newEntry.Slug}' already registered with mod {Name} ({Slug}).");
-        
+
         return newEntry;
     }
     

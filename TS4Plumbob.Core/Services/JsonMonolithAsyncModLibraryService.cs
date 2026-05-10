@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IDEK.Tools.ShocktroopUtils.Services;
@@ -18,23 +19,30 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
     
     [JsonInclude]
     [JsonPropertyName("mods")]
+    //ensures it goes before the default (0) order step
+    [JsonPropertyOrder(-100)] 
     internal List<Mod> _serializableModList;
 
+    [JsonInclude]
+    [JsonPropertyName("rigs")]
+    //ensure rigs are listed after the mods that they reference
+    //(ensures stable deserialization)
+    [JsonPropertyOrder(100)] 
+    internal List<ModRig> _rigs;
+    
+    [JsonInclude]
+    [JsonPropertyName("activeRig")]
+    //ensure the active rig is listed after the rigs list that it should be in
+    //(ensures stable deserialization)
+    [JsonPropertyOrder(200)] 
+    internal ModRig? _activeRig;
+    
     [JsonIgnore]
     private HashSet<Mod> _distinctModLut;
 
     [JsonIgnore]
     public IReadOnlyList<Mod> ModList => _serializableModList;
 
-    [JsonInclude]
-    [JsonPropertyName("activeRig")]
-    internal ModRig? _activeRig;
-
-    [JsonInclude]
-    [JsonPropertyName("rigs")]
-    internal List<ModRig> _rigs;
-    /// <inheritdoc />
-    
     [JsonIgnore]
     public ModRig? ActiveRig
     {
@@ -79,6 +87,8 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
         }
     }
 
+    private AppConfig Config => ServiceLocator.Resolve<AppConfig>() ?? throw new InvalidOperationException("Tried to resolve AppConfig before it was registered. " +
+        "Wait until after the core boots before utilizing its services!");
     /// <summary>
     /// Loads a mod library from the given file and instantiates it.
     /// </summary>
@@ -228,16 +238,26 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
 
     public bool TryAddMod(Mod mod, bool trySilently = false)
     {
+        if(!TryAddMod_Internal(mod, trySilently)) return false;
+        //add other reactive functionality here?
+        return true;
+    }
+
+    //Was originally pulled out from TryAddMod for other reasons.
+    //Will leave it out here for now in case we end up needing to do that again.
+    private bool TryAddMod_Internal(Mod mod, bool trySilently = false)
+    {
         if (mod == null) throw new ArgumentNullException(nameof(mod));
         //attempts to add the mod
-        if(!_distinctModLut.Add(mod))
+        if (!_distinctModLut.Add(mod))
         {
-            if(!trySilently) Console.WriteLine(
-                $"Failed to add mod '{mod.Name}' ('{mod.Slug}') to the library. Duplicate entry detected.");
-            
+            if (!trySilently)
+                Console.WriteLine(
+                    $"Failed to add mod '{mod.Name}' ('{mod.Slug}') to the library. Duplicate entry detected.");
+
             return false;
         }
-        
+
         _serializableModList.Add(mod);
 
         Debug.WriteLine($"Add mod '{mod.Name}' to the library.");
@@ -345,13 +365,18 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
         Debug.WriteLine("Initializing mod library from serialized data...");
         _distinctModLut = _serializableModList.ToHashSet();
 
-        // foreach (var mod in _serializableModList)
-        // {
-        //     foreach (var entry in mod.Entries)
-        //     {
-        //
-        //     }
-        // }
+        foreach (var mod in _serializableModList)
+        {
+            foreach (var entry in mod.Entries)
+            {
+                //uses reflection bc ModConcept is not publicly settable (as init is generally the only time it should be set).
+                //Deserialization is effectively a special form of init, and inherently requires reflection, so this is a valid approach.
+                
+                //Restore back-references that were ignored during serialization to avoid circularity issues.
+                PropertyInfo? modConceptProperty = typeof(ModEntry).GetProperty(nameof(ModEntry.ModConcept));
+                modConceptProperty?.SetValue(entry, mod);
+            }
+        }
 
         // Initialize rigs
         foreach (var rig in _rigs)
