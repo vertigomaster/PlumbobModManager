@@ -31,18 +31,19 @@ public static class RigCommands
         if (verbose)
         {
             PlumbobMsg.WriteUserMsg($"Note: mods not in the active rig are NOT visible!");
-            PlumbobMsg.WriteUserMsg($"Found {visibleMods.Length} mods");
         }
+        
+        PlumbobMsg.WriteUserMsg($"Found {visibleMods.Length} mods:");
         
         foreach (var mod in visibleMods)
         {
             if (showFolder)
             {
-                Console.WriteLine($"{mod.Slug} ({mod.FolderName})");
+                PlumbobMsg.WriteUserMsg($"{mod.Slug} ({mod.FolderName})");
             }
             else
             {
-                Console.WriteLine(mod.Slug);
+                PlumbobMsg.WriteUserMsg(mod.Slug);
             }
         }
     }
