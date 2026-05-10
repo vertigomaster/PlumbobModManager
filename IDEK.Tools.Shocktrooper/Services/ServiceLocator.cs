@@ -306,7 +306,7 @@ namespace IDEK.Tools.ShocktroopUtils.Services
             {
                 throw new InvalidOperationException(
                     $"Async services must be resolved with {nameof(ResolveAsync)}(), not {nameof(Resolve)}(). " +
-                    $"The type {typeof(T).FullName} is bound to an {nameof(IAsyncServiceProvider<T>)}/async jumpstarter. " +
+                    $"The type {typeof(T).FullName} is bound to an {nameof(IAsyncServiceProvider<T>)}/async jumpstarter." +
                     $"\nUse {nameof(ResolveAsync)}() when possible, as it can handle both asynchronous " +
                     $"and synchronous bindings.");
             }

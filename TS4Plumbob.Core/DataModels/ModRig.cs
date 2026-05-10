@@ -22,6 +22,8 @@ public class ModRig
 
     private List<ModEntry> _orderedInstallList;
     
+    private bool _isInitialized = false;
+    
     public IReadOnlyList<ModEntry> OrderedInstallList => _orderedInstallList;
     public int Count => _modEntryLut.Count;
 
@@ -48,6 +50,8 @@ public class ModRig
 
     private void _InitModRigFromInstallOrder()
     {
+        if (_isInitialized) return;
+        
         _modEntryLut = new(_orderedInstallList);
         
         Mod[] potentialMods = _orderedInstallList
@@ -62,6 +66,8 @@ public class ModRig
                 "which is not allowed.");
         
         _modLut = new(potentialMods);
+        
+        _isInitialized = true;
     }
 
     public static ModRig? FromSerializedData(string serializedData)
@@ -78,7 +84,7 @@ public class ModRig
 
     #region Validation Checks
 
-    private void AssertNoDuplicateModEntries()
+    private void _AssertNoDuplicateModEntries()
     {
         if (_orderedInstallList.Distinct().Count() != _orderedInstallList.Count)
             throw new ArgumentException("OrderedInstallList must have no duplicate mod entries elements!");
@@ -146,7 +152,7 @@ public class ModRig
 
     private bool _TryAddMod(ModEntry modEntry)
     {
-        if (!ServiceLocator.TryResolve(out IModLibraryService? lib))
+        if (!ServiceLocator.TryResolve(out IAsyncModLibraryService? lib))
             throw new InvalidOperationException("ModLibraryService not registered!");
 
         //Only add if the entry's mod is valid and if the entry isn't already in the rig

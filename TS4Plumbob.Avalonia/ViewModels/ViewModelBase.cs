@@ -11,5 +11,5 @@ public abstract class ViewModelBase : ObservableObject
     protected static PlumbobKernel Core => PlumbobKernel.Instance;
     protected static AppConfig Config => ServiceLocator.Resolve<AppConfig>();
     
-    protected static IModLibraryService Library => ServiceLocator.Resolve<IModLibraryService>();
+    protected static IAsyncModLibraryService Library => ServiceLocator.Resolve<IAsyncModLibraryService>();
 }

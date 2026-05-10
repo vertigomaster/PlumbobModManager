@@ -4,3 +4,8 @@ public class ModAcquisitionTests
 {
     
 }
+
+public class RigTests
+{
+    
+}

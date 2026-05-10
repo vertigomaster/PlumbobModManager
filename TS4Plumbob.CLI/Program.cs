@@ -13,22 +13,22 @@ namespace Plumbob.CLI;
 class Program
 {
     private static PlumbobKernel Core => PlumbobKernel.Instance;
-    private static AppConfig Config => ServiceLocator.Resolve<AppConfig>();
+    private static AppConfig? Config => ServiceLocator.Resolve<AppConfig>();
 
     private static async Task<int> Main(string[] args)
     {
-        int bootCode = await BootCore(args);
+        int bootCode = await _BootCore(args);
         if (bootCode != 0) return bootCode;
         WriteBootMessage();
 
-        if (args.Length != 0) return await EnterImmediateMode(args);
+        if (args.Length != 0) return await _EnterImmediateMode(args);
 
         PlumbobMsg.WriteDebugInfo("No arguments provided. Initializing in interactive mode...");
-        await EnterInteractiveMode();
+        await _EnterInteractiveMode();
         return 0;
     }
 
-    private static async Task<int> BootCore(string[] args)
+    private static async Task<int> _BootCore(string[] args)
     {
         Debug.WriteLine("Booting up Plumbob Mod Manager CLI...");
         Debug.WriteLine("Current working directory: " + Directory.GetCurrentDirectory());
@@ -52,7 +52,7 @@ class Program
     }
 
     //TODO: build REPL template for later projects
-    private static async Task<int> EnterImmediateMode(string[] args)
+    private static async Task<int> _EnterImmediateMode(string[] args)
     {
         Core.LoggingMode = PlumbobKernel.LogMode.File;
         RootCommand rootCommand = PlumbobCmd.BuildCommandTree();
@@ -61,12 +61,12 @@ class Program
         
         if(result != 0) return result;
 
-        await ShutdownCore();
+        await _ShutDownCore();
         
         return 0;
     }
 
-    private static async Task EnterInteractiveMode()
+    private static async Task _EnterInteractiveMode()
     {
         Core.LoggingMode = PlumbobKernel.LogMode.Console | PlumbobKernel.LogMode.File;
         
@@ -88,7 +88,7 @@ class Program
             if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
             {
                 PlumbobMsg.WriteDebugInfo("Exiting Interactive Mode...");
-                await ShutdownCore();
+                await _ShutDownCore();
                 break;
             }
 
@@ -105,7 +105,7 @@ class Program
         }
     }
 
-    private static async Task ShutdownCore()
+    private static async Task _ShutDownCore()
     {
         ConsoleLog.Log("Shutting down Plumbob Mod Manager CLI...");
         await Core.Shutdown();

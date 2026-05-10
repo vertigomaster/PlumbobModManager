@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using IDEK.Tools.ShocktroopUtils.Services;
 using IDEK.Tools.Trove;
 using TS4Plumbob.Avalonia.ViewModels;
+using TS4Plumbob.Core.DataModels;
 
 namespace TS4Plumbob.Avalonia.Views;
 
@@ -47,6 +50,32 @@ public partial class MainWindow : Window
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
+
+        //Don't hold up the UI thread, this is a background task.
+        Task.Run(async () => {
+            var lib = await ServiceLocator.ResolveAsync<IAsyncModLibraryService>() ?? 
+                throw new InvalidOperationException(
+                    "Null Library - Core should already be initialized by this point.");
+
+            lib.ValidateLibrary(verboseLogging: true);
+            
+            IEnumerable<Mod> mods = lib.GetAllMods();
+
+            IReadOnlyList<Mod> modsArray = mods as IReadOnlyList<Mod> ?? mods.ToList();
+            Console.WriteLine($"Entering main view, current mods ({modsArray.Count}):");
+            for (var index = 0; index < modsArray.Count; index++)
+            {
+                var mod = modsArray[index];
+                Console.WriteLine($"{(index + 1):D4} | '{mod.Name}' ({mod.Slug}), Path: '{mod.AbsolutePath}'");
+                foreach (var entry in mod.Entries)
+                {
+                    string activeText = lib.ActiveRig?.Contains(entry) == true ? "ACTIVE" : "INACTIVE";
+
+                    Console.WriteLine($"    - [{activeText}] '{entry.HumanReadableIdentifier}' " +
+                        $"({entry.Slug}), Path: '{entry.AbsPath}'");
+                }
+            }
+        });
     }
 
     #endregion
@@ -75,6 +104,7 @@ public partial class MainWindow : Window
         
         MainViewModel?.OpenFolderPicker.RegisterHandler(
             pickerTitle => PlumbobFileSystem.PickFolder(this, pickerTitle));
+        
         _loadedTrove.AddCleanup("folder-picker-sub", 
             () => MainViewModel?.OpenFolderPicker.UnregisterHandler());
     }
