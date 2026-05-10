@@ -20,10 +20,11 @@ public record ModEntry
     [JsonInclude, JsonPropertyName("modMetadata")]
     public ModMetadata ModMetadata { get; init; }
 
-    /// <summary>
-    /// A back reference to the logical mod object this is an entry for.
-    /// </summary>
-    public Mod ModConcept { get; init; }
+    //Deserializers struggle with circular dependencies (even if they are resolvable).
+    //To avoid that, we purposely do NOT serialize back-references and instead resolve
+    //them manually in subsequent steps.
+    [JsonIgnore]
+    public Mod? ModConcept { get; internal init; }
 
     #endregion
 
@@ -87,12 +88,19 @@ public record ModEntry
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return ModMetadata.Equals(other.ModMetadata) && ModConcept.Slug.Equals(other.ModConcept.Slug);
+        //ModConcept is a non-serialized circular back-reference;
+        //it cannot reliably be used for equality comparison (because it cannot be reliably used for hash code generation)
+        //So we do not count it, even though TECHNICALLY you could have two entries with identical metadata but different mods. 
+        //Because you really shouldn't have two entries with identical metadata.
+        //That's a validator task, not an equality task.
+        return ModMetadata.Equals(other.ModMetadata);
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(ModMetadata, ModConcept.Slug);
+        //ModConcept is a non-serialized circular back-reference; it cannot reliably be used for hash code generation
+        // return HashCode.Combine(ModMetadata, ModConcept.Slug);
+        return ModMetadata.GetHashCode();
     }
     
     public override string ToString()

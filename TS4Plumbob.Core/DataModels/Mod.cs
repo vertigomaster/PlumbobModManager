@@ -1,4 +1,5 @@
-﻿using IDEK.Tools.ShocktroopUtils.Services;
+﻿using System.Text.Json.Serialization;
+using IDEK.Tools.ShocktroopUtils.Services;
 using Plumbob.Core.Utils;
 
 namespace TS4Plumbob.Core.DataModels;
@@ -32,13 +33,19 @@ public class Mod
     #endregion
     #region Core Properties
     
-    /// <summary>
-    /// Represents the template that will be used as the basis for new entries.
-    /// </summary>
-    public ModMetadata MetadataTemplate { get; init; }
-    
+    [JsonInclude]
+    [JsonPropertyName("slug")]
+    [JsonPropertyOrder(100)]
     public ModSlug Slug { get; init; }
-    
+
+    [JsonInclude]
+    [JsonPropertyName("metadataTemplate")]
+    [JsonPropertyOrder(200)]
+    public ModMetadata MetadataTemplate { get; init; }
+
+    [JsonInclude]
+    [JsonPropertyName("entries")]
+    [JsonPropertyOrder(300)]
     public HashSet<ModEntry> Entries { get; init; } = [];
     
     #endregion
@@ -60,6 +67,7 @@ public class Mod
     /// <example>
     /// <c>"example_mod_slug/entries"</c>
     /// </example>
+    [JsonIgnore]
     public string EntriesSubpath => "entries";
     
     /// <summary>
@@ -76,12 +84,15 @@ public class Mod
     /// Or on Mac:
     /// <code>"/Users/user/Documents/The Sims 4/PlumbobMM/mods/example_mod_slug/entries"</code>
     /// </example>
+    [JsonIgnore]
     public string EntriesAbsolutePath => Path.Combine(AbsolutePath, EntriesSubpath);
 
+    [JsonIgnore]
     public string AbsolutePath => Path.Combine(_Lib?.AbsolutePathModsFolder ??
         throw new InvalidOperationException(
             "Null Library/Null Library mods path"), Slug.ToString());
     
+    [JsonIgnore]
     public string Name => MetadataTemplate.Name;
     
     #endregion

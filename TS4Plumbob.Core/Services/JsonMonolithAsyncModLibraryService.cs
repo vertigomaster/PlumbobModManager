@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IDEK.Tools.ShocktroopUtils.Services;
@@ -18,23 +19,30 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
     
     [JsonInclude]
     [JsonPropertyName("mods")]
+    //ensures it goes before the default (0) order step
+    [JsonPropertyOrder(-100)] 
     internal List<Mod> _serializableModList;
 
+    [JsonInclude]
+    [JsonPropertyName("rigs")]
+    //ensure rigs are listed after the mods that they reference
+    //(ensures stable deserialization)
+    [JsonPropertyOrder(100)] 
+    internal List<ModRig> _rigs;
+    
+    [JsonInclude]
+    [JsonPropertyName("activeRig")]
+    //ensure the active rig is listed after the rigs list that it should be in
+    //(ensures stable deserialization)
+    [JsonPropertyOrder(200)] 
+    internal ModRig? _activeRig;
+    
     [JsonIgnore]
     private HashSet<Mod> _distinctModLut;
 
     [JsonIgnore]
     public IReadOnlyList<Mod> ModList => _serializableModList;
 
-    [JsonInclude]
-    [JsonPropertyName("activeRig")]
-    internal ModRig? _activeRig;
-
-    [JsonInclude]
-    [JsonPropertyName("rigs")]
-    internal List<ModRig> _rigs;
-    /// <inheritdoc />
-    
     [JsonIgnore]
     public ModRig? ActiveRig
     {
@@ -357,13 +365,18 @@ public class JsonMonolithAsyncModLibraryService : IAsyncModLibraryService
         Debug.WriteLine("Initializing mod library from serialized data...");
         _distinctModLut = _serializableModList.ToHashSet();
 
-        // foreach (var mod in _serializableModList)
-        // {
-        //     foreach (var entry in mod.Entries)
-        //     {
-        //
-        //     }
-        // }
+        foreach (var mod in _serializableModList)
+        {
+            foreach (var entry in mod.Entries)
+            {
+                //uses reflection bc ModConcept is not publicly settable (as init is generally the only time it should be set).
+                //Deserialization is effectively a special form of init, and inherently requires reflection, so this is a valid approach.
+                
+                //Restore back-references that were ignored during serialization to avoid circularity issues.
+                PropertyInfo? modConceptProperty = typeof(ModEntry).GetProperty(nameof(ModEntry.ModConcept));
+                modConceptProperty?.SetValue(entry, mod);
+            }
+        }
 
         // Initialize rigs
         foreach (var rig in _rigs)
