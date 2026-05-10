@@ -104,6 +104,7 @@ public partial class MainWindow : Window
         
         MainViewModel?.OpenFolderPicker.RegisterHandler(
             pickerTitle => PlumbobFileSystem.PickFolder(this, pickerTitle));
+        
         _loadedTrove.AddCleanup("folder-picker-sub", 
             () => MainViewModel?.OpenFolderPicker.UnregisterHandler());
     }
